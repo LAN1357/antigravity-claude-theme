@@ -7,6 +7,7 @@
  *   - 输入框：16px 圆角，通过 .bg-card-border 背景色呈现无光晕 1px 细线，聚焦时加深边框灰 #B8B6B0
  *   - 强调色：陶土橙 #D97757 严格限定于发送按钮与对话区链接
  *   - 代码/表格：中性灰底色 #F1F0EC，无偏黄残留
+ *   - 正文字体：支持系统级真实粗体渲染（font-weight: 700）
  */
 
 /* ==========================================================================
@@ -161,16 +162,35 @@ body {
   text-rendering: optimizeLegibility !important;
 }
 
-/* 对话正文衬线体 */
+/* 对话正文衬线体：统一段落、列表、引用块等全部正文节点 */
 [data-testid="conversation-view"] p,
+[data-testid="conversation-view"] li,
+[data-testid="conversation-view"] blockquote,
 [data-testid*="message"] p,
+[data-testid*="message"] li,
 [data-testid*="response"] p,
+[data-testid*="response"] li,
 .prose p,
+.prose li,
 [class*="prose"] p,
-.notebook-markdown-cell p {
+[class*="prose"] li,
+.notebook-markdown-cell p,
+.notebook-markdown-cell li {
   font-family: var(--cm-serif) !important;
   font-size: 15.5px !important;
   line-height: 1.68 !important;
+}
+
+/* 核心修复：强制字重为 700 (Bold)，激活系统字库中真正的粗体字型，彻底解决加粗失效问题 */
+strong,
+b,
+[data-testid="conversation-view"] strong,
+[data-testid="conversation-view"] b,
+.prose strong,
+.prose b,
+[class*="font-semibold"],
+[class*="font-bold"] {
+  font-weight: 700 !important;
 }
 
 /* 链接限定仅在对话内容区着色 */
