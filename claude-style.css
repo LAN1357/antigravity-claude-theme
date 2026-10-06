@@ -1,5 +1,5 @@
 /**
- * @name Claude Minimal for Antigravity 2.x (Neutral Edition)
+ * @name Claude Minimal for Antigravity 2.x (Neutral Apple Typography Edition)
  * @description
  *   - 页面背景：中性微暖调 #FAFAF8
  *   - 表面/卡片：纯白 #FFFFFF
@@ -7,15 +7,14 @@
  *   - 输入框：16px 圆角，通过 .bg-card-border 背景色呈现无光晕 1px 细线，聚焦时加深边框灰 #B8B6B0
  *   - 强调色：陶土橙 #D97757 严格限定于发送按钮与对话区链接
  *   - 代码/表格：中性灰底色 #F1F0EC，无偏黄残留
- *   - 正文字体：支持系统级真实粗体渲染（font-weight: 700）
+ *   - 正文字体：采用苹果官方原生黑体（PingFang SC / SF Pro），清晰高可读性，强对比黑体加粗
  */
 
 /* ==========================================================================
-   1. 系统自带字体定义（零外网请求）
+   1. 系统自带字体定义（采用苹果官方最佳黑体栈，零外网依赖）
    ========================================================================== */
 :root {
-  --cm-sans: system-ui, -apple-system, "SF Pro Text", "SF Pro Display", "Helvetica Neue", sans-serif;
-  --cm-serif: ui-serif, "New York", "Iowan Old Style", "Charter", Georgia, serif;
+  --cm-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --cm-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
 
   /* 覆盖 Antigravity 原生字体变量 */
@@ -46,7 +45,8 @@ html.light,
   --border: #e6e5e0;        /* 边框、分割线、表格边线 */
   --border-focus: #b8b6b0;  /* 聚焦态加深边框色（比 border 深一档） */
   --muted: #f1f0ec;         /* 代码块底色、表格表头底色（消除米黄） */
-  --text: #2b2b28;          /* 正文文字 */
+  --text: #2b2b28;          /* 正文常规文字 */
+  --text-bold: #111110;     /* 突出黑体加粗文字（高对比纯正黑） */
   --text-muted: #7a7974;    /* 次要说明文字 */
   --accent: #d97757;        /* 品牌强调色：陶土橙（仅用于发送按钮与链接） */
 
@@ -109,6 +109,7 @@ html.light,
     --border-focus: #555555;
     --muted: #282828;
     --text: #e6e6e6;
+    --text-bold: #ffffff;
     --text-muted: #999999;
     --accent: #d97757;
 
@@ -151,7 +152,7 @@ html.light,
 }
 
 /* ==========================================================================
-   4. 全局字体与排版
+   4. 全局字体与排版（与参考图一致的现代苹方黑体、清晰对比加粗）
    ========================================================================== */
 html,
 body {
@@ -162,7 +163,7 @@ body {
   text-rendering: optimizeLegibility !important;
 }
 
-/* 对话正文衬线体：统一段落、列表、引用块等全部正文节点 */
+/* 对话正文：现代清晰黑体（苹方），常规字重 400 */
 [data-testid="conversation-view"] p,
 [data-testid="conversation-view"] li,
 [data-testid="conversation-view"] blockquote,
@@ -176,21 +177,48 @@ body {
 [class*="prose"] li,
 .notebook-markdown-cell p,
 .notebook-markdown-cell li {
-  font-family: var(--cm-serif) !important;
-  font-size: 15.5px !important;
+  font-family: var(--cm-sans) !important;
+  font-weight: 400 !important; /* 强制常规字重，防止被外层样式误染为半粗体 */
+  font-size: 15px !important;
   line-height: 1.68 !important;
+  color: var(--text) !important;
+  letter-spacing: -0.01em !important;
 }
 
-/* 核心修复：强制字重为 700 (Bold)，激活系统字库中真正的粗体字型，彻底解决加粗失效问题 */
+/* 核心修复：加粗文本（strong/b）使用 PingFang SC 真实加粗（600/700）+ 极深对比字色，醒目突出 */
 strong,
 b,
 [data-testid="conversation-view"] strong,
 [data-testid="conversation-view"] b,
 .prose strong,
-.prose b,
-[class*="font-semibold"],
-[class*="font-bold"] {
-  font-weight: 700 !important;
+.prose b {
+  font-family: var(--cm-sans) !important;
+  font-weight: 600 !important;
+  color: var(--text-bold) !important;
+}
+
+/* 标题样式：清晰醒目，与参考图一致的饱满黑体标题 */
+h1, h2, h3, h4, h5, h6,
+[class*="markdown"] h1,
+[class*="markdown"] h2,
+[class*="markdown"] h3,
+[class*="markdown"] h4 {
+  font-family: var(--cm-sans) !important;
+  font-weight: 600 !important;
+  color: var(--text-bold) !important;
+  line-height: 1.4 !important;
+  letter-spacing: -0.015em !important;
+}
+
+/* 列表符号与间距微调 */
+[data-testid="conversation-view"] ul,
+.prose ul {
+  padding-left: 1.25rem !important;
+}
+[data-testid="conversation-view"] li,
+.prose li {
+  margin-top: 0.35rem !important;
+  margin-bottom: 0.35rem !important;
 }
 
 /* 链接限定仅在对话内容区着色 */
