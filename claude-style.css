@@ -1,0 +1,300 @@
+/**
+ * @name Claude Minimal for Antigravity 2.x (Neutral Edition)
+ * @description
+ *   - 页面背景：中性微暖调 #FAFAF8
+ *   - 表面/卡片：纯白 #FFFFFF
+ *   - 侧边栏：柔和浅灰 #F4F4F1，选中会话项 #E2E2DE（中性灰无米黄色）
+ *   - 输入框：16px 圆角，通过 .bg-card-border 背景色呈现无光晕 1px 细线，聚焦时加深边框灰 #B8B6B0
+ *   - 强调色：陶土橙 #D97757 严格限定于发送按钮与对话区链接
+ *   - 代码/表格：中性灰底色 #F1F0EC，无偏黄残留
+ */
+
+/* ==========================================================================
+   1. 系统自带字体定义（零外网请求）
+   ========================================================================== */
+:root {
+  --cm-sans: system-ui, -apple-system, "SF Pro Text", "SF Pro Display", "Helvetica Neue", sans-serif;
+  --cm-serif: ui-serif, "New York", "Iowan Old Style", "Charter", Georgia, serif;
+  --cm-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+  /* 覆盖 Antigravity 原生字体变量 */
+  --font-sans: var(--cm-sans) !important;
+  --default-font-family: var(--cm-sans) !important;
+  --font-mono: var(--cm-mono) !important;
+  --default-mono-font-family: var(--cm-mono) !important;
+  --editor-font-family: var(--cm-mono) !important;
+  --vscode-font-family: var(--cm-mono) !important;
+}
+
+/* ==========================================================================
+   2. 浅色模式语义变量与原生 Tailwind v4 变量覆盖
+   ========================================================================== */
+:root,
+html,
+body,
+.theme-light,
+.vscode-light,
+html.light,
+[data-theme="light"] {
+  /* 用户统一设计规范变量（中性仅微弱暖调） */
+  --bg: #fafaf8;            /* 页面全局背景 */
+  --surface: #ffffff;       /* 输入框、卡片、浮层底色 */
+  --sidebar: #f4f4f1;       /* 侧边栏底色 */
+  --sidebar-muted: #ebebe8; /* 侧边栏 Hover 悬浮态 */
+  --sidebar-active: #e2e2de;/* 侧边栏选中项底色（中性灰） */
+  --border: #e6e5e0;        /* 边框、分割线、表格边线 */
+  --border-focus: #b8b6b0;  /* 聚焦态加深边框色（比 border 深一档） */
+  --muted: #f1f0ec;         /* 代码块底色、表格表头底色（消除米黄） */
+  --text: #2b2b28;          /* 正文文字 */
+  --text-muted: #7a7974;    /* 次要说明文字 */
+  --accent: #d97757;        /* 品牌强调色：陶土橙（仅用于发送按钮与链接） */
+
+  /* ---------- 精确覆盖 Antigravity 原生 Tailwind 变量 ---------- */
+  --background: #fafaf8 !important;
+  --color-background: #fafaf8 !important;
+
+  --card: #ffffff !important;
+  --color-card: #ffffff !important;
+  --popover: #ffffff !important;
+
+  --sidebar: #f4f4f1 !important;
+  --color-sidebar: #f4f4f1 !important;
+  --sidebar-secondary: #e2e2de !important;
+  --color-sidebar-secondary: #e2e2de !important;
+  --sidebar-muted: #ebebe8 !important;
+  --color-sidebar-muted: #ebebe8 !important;
+
+  --secondary: #f1f0ec !important;
+  --color-secondary: #f1f0ec !important;
+  --secondary-foreground: #2b2b28 !important;
+  --color-secondary-foreground: #2b2b28 !important;
+
+  --muted: #f1f0ec !important;
+  --color-muted: #f1f0ec !important;
+  --muted-foreground: #7a7974 !important;
+  --color-muted-foreground: #7a7974 !important;
+
+  --border: #e6e5e0 !important;
+  --color-border: #e6e5e0 !important;
+  --card-border: #e6e5e0 !important;
+  --color-card-border: #e6e5e0 !important;
+
+  --foreground: #2b2b28 !important;
+  --color-foreground: #2b2b28 !important;
+  --placeholder: #7a7974 !important;
+  --color-placeholder: #7a7974 !important;
+
+  /* 消除全局意外继承导致的橙色外圈 */
+  --ring: transparent !important;
+  --focus-ring-color: transparent !important;
+}
+
+/* ==========================================================================
+   3. 深色模式（中性深色阶梯）
+   ========================================================================== */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.theme-light):not(.vscode-light):not([data-theme="light"]),
+  .dark,
+  .theme-dark,
+  .vscode-dark,
+  html.dark,
+  [data-theme="dark"] {
+    --bg: #212121;
+    --surface: #2a2a2a;
+    --sidebar: #1b1b1b;
+    --sidebar-muted: #262626;
+    --sidebar-active: #333333;
+    --border: #3a3a3a;
+    --border-focus: #555555;
+    --muted: #282828;
+    --text: #e6e6e6;
+    --text-muted: #999999;
+    --accent: #d97757;
+
+    --background: #212121 !important;
+    --color-background: #212121 !important;
+    --card: #2a2a2a !important;
+    --color-card: #2a2a2a !important;
+    --popover: #2a2a2a !important;
+
+    --sidebar: #1b1b1b !important;
+    --color-sidebar: #1b1b1b !important;
+    --sidebar-secondary: #333333 !important;
+    --color-sidebar-secondary: #333333 !important;
+    --sidebar-muted: #262626 !important;
+    --color-sidebar-muted: #262626 !important;
+
+    --secondary: #282828 !important;
+    --color-secondary: #282828 !important;
+    --secondary-foreground: #e6e6e6 !important;
+    --color-secondary-foreground: #e6e6e6 !important;
+
+    --muted: #282828 !important;
+    --color-muted: #282828 !important;
+    --muted-foreground: #999999 !important;
+    --color-muted-foreground: #999999 !important;
+
+    --border: #3a3a3a !important;
+    --color-border: #3a3a3a !important;
+    --card-border: #3a3a3a !important;
+    --color-card-border: #3a3a3a !important;
+
+    --foreground: #e6e6e6 !important;
+    --color-foreground: #e6e6e6 !important;
+    --placeholder: #999999 !important;
+    --color-placeholder: #999999 !important;
+
+    --ring: transparent !important;
+    --focus-ring-color: transparent !important;
+  }
+}
+
+/* ==========================================================================
+   4. 全局字体与排版
+   ========================================================================== */
+html,
+body {
+  font-family: var(--cm-sans) !important;
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+  -webkit-font-smoothing: antialiased !important;
+  text-rendering: optimizeLegibility !important;
+}
+
+/* 对话正文衬线体 */
+[data-testid="conversation-view"] p,
+[data-testid*="message"] p,
+[data-testid*="response"] p,
+.prose p,
+[class*="prose"] p,
+.notebook-markdown-cell p {
+  font-family: var(--cm-serif) !important;
+  font-size: 15.5px !important;
+  line-height: 1.68 !important;
+}
+
+/* 链接限定仅在对话内容区着色 */
+[data-testid="conversation-view"] a,
+.prose a,
+[class*="prose"] a,
+.notebook-markdown-cell a {
+  color: var(--accent) !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* 代码统一为 SF Mono */
+code,
+pre,
+kbd,
+samp,
+.monaco-editor,
+.xterm,
+.code-block {
+  font-family: var(--cm-mono) !important;
+}
+
+/* ==========================================================================
+   5. 底部输入框净化（清除一切外圈与发光，用原生 .bg-card-border 背景呈边框）
+   ========================================================================== */
+/* 清除外层多余的包裹层边框与阴影 */
+div:has(> [id="antigravity.agentSidePanelInputBox"]),
+.flex.flex-col.w-full.shrink-0:has([id="antigravity.agentSidePanelInputBox"]) {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  filter: none !important;
+  background: transparent !important;
+}
+
+/* 输入框最外层容器：不加额外 border，用背景色透过 p-px 呈现 1px 细线 */
+[id="antigravity.agentSidePanelInputBox"] {
+  border: none !important;
+  border-radius: 16px !important;
+  background-color: var(--border) !important; /* 常态边框颜色 */
+  box-shadow: none !important;
+  outline: none !important;
+  filter: none !important;
+  animation: none !important;
+  transition: background-color 0.15s ease !important;
+}
+
+/* 聚焦态：边框颜色通过加深背景色为 --border-focus 实现，绝无橙色与光晕 */
+[id="antigravity.agentSidePanelInputBox"]:focus-within {
+  background-color: var(--border-focus) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  filter: none !important;
+}
+
+/* 输入框内层表面卡片：纯白背景，清除内部任何边框与阴影 */
+[id="antigravity.agentSidePanelInputBox"] > .bg-card,
+[id="antigravity.agentSidePanelInputBox"] .bg-card {
+  background-color: var(--surface) !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* 仅针对输入框内的可交互元素清除 outline，不影响全局其他元素 */
+[id="antigravity.agentSidePanelInputBox"] textarea,
+[id="antigravity.agentSidePanelInputBox"] [contenteditable],
+[id="antigravity.agentSidePanelInputBox"] input,
+[id="antigravity.agentSidePanelInputBox"] *:hover,
+[id="antigravity.agentSidePanelInputBox"] *:focus,
+[id="antigravity.agentSidePanelInputBox"] *:active {
+  box-shadow: none !important;
+  outline: none !important;
+  filter: none !important;
+}
+
+/* 精确匹配发送按钮（基于 data-testid 与 aria-label） */
+[id="antigravity.agentSidePanelInputBox"] [data-testid="send-button"],
+[id="antigravity.agentSidePanelInputBox"] button[aria-label="Send message"] {
+  background-color: var(--accent) !important;
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+   6. 真实类名精准调色（消除偏黄残留）
+   ========================================================================== */
+/* 表格表头（使用探测到的类名） */
+table.min-w-full th,
+th.bg-secondary {
+  background-color: var(--muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+table.min-w-full td {
+  border-color: var(--border) !important;
+}
+
+/* 代码块（使用探测到的类名） */
+pre,
+div.relative.rounded-xl.bg-muted.border,
+div.relative.whitespace-pre-wrap.rounded-xl.bg-muted.border,
+.code-block {
+  background-color: var(--muted) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+:not(pre) > code,
+code.whitespace-pre-wrap {
+  background-color: var(--muted) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  border-radius: 5px !important;
+}
+
+/* 侧边栏当前选中的会话项（使用探测到的类名） */
+[data-testid="conversation-row-sidebar"][data-selected="true"],
+[data-testid="conversation-row-sidebar"].bg-sidebar-secondary {
+  background-color: var(--sidebar-active) !important;
+  color: var(--text) !important;
+}
+
+/* 顶部栏与侧边栏分割边界 */
+header,
+[data-testid="conversation-list-sidebar"] {
+  border-color: var(--border) !important;
+}
