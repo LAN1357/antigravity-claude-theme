@@ -19,6 +19,12 @@
     window.__claude_enhancer_interval = null;
   }
 
+  // 清除旧文件交互监听器与上下文菜单残留
+  if (window.__claude_file_handlers_cleanup) {
+    window.__claude_file_handlers_cleanup();
+    window.__claude_file_handlers_cleanup = null;
+  }
+
   // 1. 获取路由器实例
   function getRouter() {
     return window.__antigravity_router || window.__TSR_ROUTER__ || null;
@@ -499,6 +505,269 @@
       characterData: true
     });
   }
+
+  // =========================================================================
+  // E. 文件单机即开 + 右键访达/复制上下文菜单 (File Click & Finder Context Menu)
+  // =========================================================================
+  let activeContextMenu = null;
+
+  function removeContextMenu() {
+    if (activeContextMenu) {
+      activeContextMenu.remove();
+      activeContextMenu = null;
+    }
+  }
+
+  function isLikelyFilePath(str) {
+    if (!str || typeof str !== 'string') return false;
+    str = str.trim();
+    if (str.startsWith('http://') || str.startsWith('https://')) return false;
+    if (str.startsWith('/c/') || str.startsWith('/projects') || str.startsWith('/?') || str === '#' || str === '/') return false;
+    if (str.startsWith('file://')) return true;
+    if (str.startsWith('/Users/') || str.startsWith('/System/') || str.startsWith('/Applications/') || str.startsWith('/Library/') || str.startsWith('/private/')) return true;
+    if (str.startsWith('/') && /\.[a-zA-Z0-9_-]{1,10}(#.*)?$/.test(str)) return true;
+    return false;
+  }
+
+  function extractFileInfo(el) {
+    if (!el || !el.closest) return null;
+    const target = el.closest(
+      'button.inline-pill, [data-uri], a[href], [data-testid*="file"], [title*="/"]'
+    );
+    if (!target) return null;
+
+    let rawUri = target.getAttribute('data-uri') || target.getAttribute('href') || target.getAttribute('title');
+    if (!rawUri) {
+      const text = target.textContent?.trim();
+      if (text && isLikelyFilePath(text) && !text.includes('\n')) {
+        rawUri = text;
+      }
+    }
+    if (!rawUri || !isLikelyFilePath(rawUri)) return null;
+    rawUri = rawUri.trim();
+
+    let uri = rawUri;
+    if (uri.startsWith('/')) {
+      uri = 'file://' + uri;
+    }
+    if (!uri.startsWith('file://')) return null;
+
+    const cleanUri = uri.replace(/#[^#]*$/, '');
+    let cleanPath = cleanUri.replace(/^file:\/\//, '');
+    let displayPath = cleanPath;
+    try {
+      displayPath = decodeURIComponent(cleanPath);
+    } catch (e) {}
+
+    if (!displayPath || displayPath === '/' || displayPath === '/Users' || displayPath === '/Users/lfr') {
+      return null;
+    }
+
+    const fileName = displayPath.split('/').filter(Boolean).pop() || displayPath;
+
+    return {
+      element: target,
+      rawUri,
+      cleanUri,
+      cleanPath,
+      displayPath,
+      fileName
+    };
+  }
+
+  function showFileContextMenu(e, fileInfo) {
+    removeContextMenu();
+
+    const menu = document.createElement('div');
+    menu.id = 'claude-file-context-menu';
+    menu.className = 'claude-file-context-menu';
+
+    const iconDoc = `<svg class="claude-fcm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`;
+    const iconFolder = `<svg class="claude-fcm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+    const iconCopy = `<svg class="claude-fcm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+    const iconTag = `<svg class="claude-fcm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`;
+
+    menu.innerHTML = `
+      <div class="claude-fcm-header" title="${fileInfo.displayPath}">
+        <span class="claude-fcm-filename">${fileInfo.fileName}</span>
+      </div>
+      <div class="claude-fcm-item" data-action="open">
+        ${iconDoc}
+        <span class="claude-fcm-text">打开文件</span>
+      </div>
+      <div class="claude-fcm-item" data-action="reveal">
+        ${iconFolder}
+        <span class="claude-fcm-text">在访达中显示</span>
+      </div>
+      <div class="claude-fcm-divider"></div>
+      <div class="claude-fcm-item" data-action="copy-path">
+        ${iconCopy}
+        <span class="claude-fcm-text">复制完整路径</span>
+      </div>
+      <div class="claude-fcm-item" data-action="copy-name">
+        ${iconTag}
+        <span class="claude-fcm-text">复制文件名</span>
+      </div>
+    `;
+
+    document.body.appendChild(menu);
+    activeContextMenu = menu;
+
+    const menuW = 200;
+    const menuH = 175;
+    let posX = e.clientX;
+    let posY = e.clientY;
+
+    if (posX + menuW > window.innerWidth - 8) {
+      posX = Math.max(8, posX - menuW);
+    }
+    if (posY + menuH > window.innerHeight - 8) {
+      posY = Math.max(8, posY - menuH);
+    }
+
+    menu.style.left = `${posX}px`;
+    menu.style.top = `${posY}px`;
+
+    menu.addEventListener('click', async (ev) => {
+      const item = ev.target.closest('.claude-fcm-item');
+      if (!item) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+
+      const action = item.getAttribute('data-action');
+      if (action === 'open') {
+        removeContextMenu();
+        window.__claude_last_file_action = { action: 'menu_open', uri: fileInfo.cleanUri, time: Date.now() };
+        if (window.electronNative?.openExternal) {
+          window.electronNative.openExternal(fileInfo.cleanUri).catch(() => {});
+        }
+      } else if (action === 'reveal') {
+        removeContextMenu();
+        window.__claude_last_file_action = { action: 'reveal', uri: fileInfo.cleanUri, time: Date.now() };
+        if (window.electronNative?.revealInFilePicker) {
+          window.electronNative.revealInFilePicker(fileInfo.cleanUri).catch(() => {});
+        }
+      } else if (action === 'copy-path') {
+        window.__claude_last_file_action = { action: 'copy_path', path: fileInfo.displayPath, time: Date.now() };
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(fileInfo.displayPath);
+          } else {
+            const ta = document.createElement('textarea');
+            ta.value = fileInfo.displayPath;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            ta.remove();
+          }
+          const textSpan = item.querySelector('.claude-fcm-text');
+          if (textSpan) textSpan.textContent = '已复制路径 ✓';
+          setTimeout(() => removeContextMenu(), 500);
+        } catch (err) {
+          removeContextMenu();
+        }
+      } else if (action === 'copy-name') {
+        window.__claude_last_file_action = { action: 'copy_name', name: fileInfo.fileName, time: Date.now() };
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(fileInfo.fileName);
+          } else {
+            const ta = document.createElement('textarea');
+            ta.value = fileInfo.fileName;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            ta.remove();
+          }
+          const textSpan = item.querySelector('.claude-fcm-text');
+          if (textSpan) textSpan.textContent = '已复制名称 ✓';
+          setTimeout(() => removeContextMenu(), 500);
+        } catch (err) {
+          removeContextMenu();
+        }
+      }
+    });
+  }
+
+  function setupFileInteractions() {
+    // 1. 左键单击：直接调用系统默认程序打开文件
+    const handleClick = (e) => {
+      if (e.button !== 0) return;
+      if (e.target.closest('#claude-file-context-menu')) return;
+
+      const fileInfo = extractFileInfo(e.target);
+      if (fileInfo) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        removeContextMenu();
+
+        // 触感反馈微动效
+        fileInfo.element.classList.add('claude-file-active-click');
+        setTimeout(() => fileInfo.element.classList.remove('claude-file-active-click'), 200);
+
+        window.__claude_last_file_action = { action: 'click_open', uri: fileInfo.cleanUri, time: Date.now() };
+        if (window.electronNative?.openExternal) {
+          window.electronNative.openExternal(fileInfo.cleanUri).catch((err) => {
+            console.warn('[ClaudeEnhancer] Failed to open external file:', err);
+          });
+        }
+      }
+    };
+
+    // 2. 右键单击：弹出原质上下文菜单（含“在访达中显示 / 打开所在文件夹”）
+    const handleContextMenu = (e) => {
+      const fileInfo = extractFileInfo(e.target);
+      if (fileInfo) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        showFileContextMenu(e, fileInfo);
+      } else {
+        removeContextMenu();
+      }
+    };
+
+    // 3. 点击外部、滚动、按 Esc 自动关闭菜单
+    const handleGlobalClick = (e) => {
+      if (!e.target.closest('#claude-file-context-menu')) {
+        removeContextMenu();
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        removeContextMenu();
+      }
+    };
+
+    const handleScroll = () => {
+      removeContextMenu();
+    };
+
+    document.addEventListener('click', handleClick, true);
+    document.addEventListener('contextmenu', handleContextMenu, true);
+    document.addEventListener('click', handleGlobalClick, false);
+    document.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleScroll, true);
+
+    return () => {
+      document.removeEventListener('click', handleClick, true);
+      document.removeEventListener('contextmenu', handleContextMenu, true);
+      document.removeEventListener('click', handleGlobalClick, false);
+      document.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleScroll, true);
+      removeContextMenu();
+    };
+  }
+
+  // 注册全局清理函数以支持热更新
+  if (window.__claude_file_handlers_cleanup) {
+    window.__claude_file_handlers_cleanup();
+  }
+  window.__claude_file_handlers_cleanup = setupFileInteractions();
 
   // 暴露给注入进程热更新调用
   window.__claude_render_recents = renderRecents;
