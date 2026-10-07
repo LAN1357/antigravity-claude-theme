@@ -36,11 +36,26 @@ if pgrep -f "/Applications/Antigravity.app/Contents/MacOS/Antigravity" >/dev/nul
     sleep 2
 fi
 
-# 3. 通过二进制直接拉起 Antigravity，确保参数直达 Chromium 内核
+# 3. 为内核进程注入代理
+# Antigravity 的界面由 Go 语言服务器在 127.0.0.1:随机端口 上提供，而 Go 只读环境变量、
+# 不读 macOS 系统代理。代理缺失时它会直连 Google 并卡在 SYN_SENT，本地 UI 端口不再响应，
+# Electron 侧表现为 main.log 里的 ERR_TIMED_OUT + 白屏窗口。
+if [ -z "$https_proxy" ] && [ -z "$HTTPS_PROXY" ]; then
+    SYS_PROXY="$(scutil --proxy | awk -F' : ' '/^  HTTPSProxy/{hs=$2} /^  HTTPSPort/{hp=$2} /^  HTTPProxy/{hh=$2} /^  HTTPPort/{hport=$2} END{if(hs!=""&&hp!="")print "http://"hs":"hp; else if(hh!=""&&hport!="")print "http://"hh":"hport}')"
+    if [ -n "$SYS_PROXY" ]; then
+        export http_proxy="$SYS_PROXY" https_proxy="$SYS_PROXY"
+        echo ">> 已注入系统代理给内核进程: $SYS_PROXY"
+    else
+        echo ">> ⚠️ 未检测到系统代理，语言服务器可能连不上 Google（表现为白屏）。"
+    fi
+fi
+export no_proxy="localhost,127.0.0.1,::1${no_proxy:+,$no_proxy}"
+
+# 4. 通过二进制直接拉起 Antigravity，确保参数直达 Chromium 内核
 echo ">> 正在以调试模式启动 Antigravity (端口: $PORT)..."
 "/Applications/Antigravity.app/Contents/MacOS/Antigravity" --remote-debugging-port=$PORT >/dev/null 2>&1 &
 
-# 4. 轮询检测调试接口是否就绪
+# 5. 轮询检测调试接口是否就绪
 echo ">> 正在等待调试端口 http://127.0.0.1:$PORT 开放..."
 READY=0
 for i in {1..25}; do
@@ -56,6 +71,6 @@ if [ $READY -eq 0 ]; then
     echo ">> ⚠️ 端口检测超时，尝试启动注入服务..."
 fi
 
-# 5. 启动注入与热更新服务
+# 6. 启动注入与热更新服务
 echo ">> 正在启动注入与监听服务..."
 exec "$NODE_BIN" inject.js "$PORT"
