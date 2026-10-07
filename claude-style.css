@@ -14,8 +14,8 @@
    1. 系统自带字体定义（采用苹果官方最佳黑体栈，零外网依赖）
    ========================================================================== */
 :root {
-  --cm-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  --cm-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+  --cm-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  --cm-mono: ui-monospace, "SF Mono", "Cascadia Code", "Cascadia Mono", "Segoe UI Mono", Menlo, Monaco, Consolas, monospace;
 
   /* 覆盖 Antigravity 原生字体变量 */
   --font-sans: var(--cm-sans) !important;

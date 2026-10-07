@@ -1,11 +1,13 @@
 const puppeteer = require('puppeteer-core');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { execSync } = require('child_process');
 
 const CSS_PATH = path.join(__dirname, 'claude-style.css');
 const JS_PATH = path.join(__dirname, 'claude-enhancer.js');
-const DB_PATH = path.join(process.env.HOME, '.gemini/antigravity/conversation_summaries.db');
+const USER_HOME = os.homedir() || process.env.USERPROFILE || process.env.HOME || '';
+const DB_PATH = path.join(USER_HOME, '.gemini', 'antigravity', 'conversation_summaries.db');
 const PORT = process.env.DEBUG_PORT || process.argv[2] || 9223;
 const STYLE_TAG_ID = 'antigravity-claude-style';
 const SCRIPT_TAG_ID = 'antigravity-claude-enhancer';
@@ -35,8 +37,15 @@ function getRecentConversations() {
   try {
     if (!fs.existsSync(DB_PATH)) return [];
     const sql = `SELECT conversation_id as id, title, last_modified_time as time FROM conversation_summaries WHERE killed = 0 AND title != '' ORDER BY last_modified_time DESC LIMIT 40;`;
-    const out = execSync(`sqlite3 -json "${DB_PATH}" "${sql}"`, { encoding: 'utf-8', timeout: 2000 });
-    return JSON.parse(out);
+    try {
+      const out = execSync(`sqlite3 -json "${DB_PATH}" "${sql}"`, { encoding: 'utf-8', timeout: 2000, stdio: ['pipe', 'pipe', 'ignore'] });
+      return JSON.parse(out);
+    } catch (e) {
+      // 备选方案：Windows 等未内置 sqlite3 命令行环境时，尝试通过 Python 标准库读取
+      const pyCmd = `python -c "import sqlite3, json; con=sqlite3.connect(r'''${DB_PATH}'''); cur=con.cursor(); cur.execute('''${sql}'''); print(json.dumps([{'id':r[0],'title':r[1],'time':r[2]} for r in cur.fetchall()]))"`;
+      const outPy = execSync(pyCmd, { encoding: 'utf-8', timeout: 3000, stdio: ['pipe', 'pipe', 'ignore'] });
+      return JSON.parse(outPy);
+    }
   } catch (err) {
     return [];
   }

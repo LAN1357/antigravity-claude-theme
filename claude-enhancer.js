@@ -522,17 +522,21 @@
     if (!str || typeof str !== 'string') return false;
     str = str.trim();
     if (str.startsWith('http://') || str.startsWith('https://')) return false;
-    if (str.startsWith('/c/') || str.startsWith('/projects') || str.startsWith('/?') || str === '#' || str === '/') return false;
+    if (str.startsWith('/c/') || str.startsWith('/projects') || str.startsWith('/?') || str === '#' || str === '/' || str === '\\') return false;
     if (str.startsWith('file://')) return true;
+    // Unix / macOS 绝对路径
     if (str.startsWith('/Users/') || str.startsWith('/System/') || str.startsWith('/Applications/') || str.startsWith('/Library/') || str.startsWith('/private/')) return true;
-    if (str.startsWith('/') && /\.[a-zA-Z0-9_-]{1,10}(#.*)?$/.test(str)) return true;
+    // Windows 盘符绝对路径 (C:\... 或 C:/...) 或 UNC 路径
+    if (/^[a-zA-Z]:[\\/]/.test(str) || /^\\\\[a-zA-Z0-9_-]+[\\/]/.test(str)) return true;
+    // 带有明确文件后缀的路径 (POSIX 或 Windows)
+    if ((str.startsWith('/') || str.startsWith('\\') || /^[a-zA-Z]:/.test(str)) && /\.[a-zA-Z0-9_-]{1,10}(#.*)?$/.test(str)) return true;
     return false;
   }
 
   function extractFileInfo(el) {
     if (!el || !el.closest) return null;
     const target = el.closest(
-      'button.inline-pill, [data-uri], a[href], [data-testid*="file"], [title*="/"]'
+      'button.inline-pill, [data-uri], a[href], [data-testid*="file"], [title*="/"], [title*="\\\\"]'
     );
     if (!target) return null;
 
@@ -549,6 +553,10 @@
     let uri = rawUri;
     if (uri.startsWith('/')) {
       uri = 'file://' + uri;
+    } else if (/^[a-zA-Z]:[\\/]/.test(uri)) {
+      uri = 'file:///' + uri.replace(/\\/g, '/');
+    } else if (/^\\\\[a-zA-Z0-9_-]+[\\/]/.test(uri)) {
+      uri = 'file:' + uri.replace(/\\/g, '/');
     }
     if (!uri.startsWith('file://')) return null;
 
@@ -559,11 +567,22 @@
       displayPath = decodeURIComponent(cleanPath);
     } catch (e) {}
 
-    if (!displayPath || displayPath === '/' || displayPath === '/Users' || displayPath === '/Users/lfr') {
+    // Windows 盘符处理：去掉开头的 /C:/ -> C:/
+    if (/^\/[a-zA-Z]:[\\/]/.test(displayPath)) {
+      displayPath = displayPath.slice(1);
+    }
+
+    // Windows 系统下转换为本地反斜杠路径
+    const isWindows = typeof navigator !== 'undefined' && (/win/i.test(navigator.platform) || /win/i.test(navigator.userAgent));
+    if (isWindows && /^[a-zA-Z]:\//.test(displayPath)) {
+      displayPath = displayPath.replace(/\//g, '\\');
+    }
+
+    if (!displayPath || displayPath === '/' || displayPath === '\\' || /^[a-zA-Z]:[\\/]?$/.test(displayPath)) {
       return null;
     }
 
-    const fileName = displayPath.split('/').filter(Boolean).pop() || displayPath;
+    const fileName = displayPath.split(/[/\\]/).filter(Boolean).pop() || displayPath;
 
     return {
       element: target,
@@ -577,6 +596,9 @@
 
   function showFileContextMenu(e, fileInfo) {
     removeContextMenu();
+
+    const isMac = typeof navigator !== 'undefined' && (/mac/i.test(navigator.platform) || /mac/i.test(navigator.userAgent));
+    const revealText = isMac ? '在访达中显示' : '在资源管理器中显示';
 
     const menu = document.createElement('div');
     menu.id = 'claude-file-context-menu';
@@ -597,7 +619,7 @@
       </div>
       <div class="claude-fcm-item" data-action="reveal">
         ${iconFolder}
-        <span class="claude-fcm-text">在访达中显示</span>
+        <span class="claude-fcm-text">${revealText}</span>
       </div>
       <div class="claude-fcm-divider"></div>
       <div class="claude-fcm-item" data-action="copy-path">
