@@ -1,12 +1,13 @@
 /**
  * Claude Enhancer for Antigravity
- * 1. 置顶 / 项目 / 最近 侧边栏三段式结构
+ * 1. 置顶 / 项目 / 最近 侧边栏三段式结构（全部支持折叠/展开）
  * 2. 项目名加粗与紧凑间距
  * 3. 新建对话 SPA 无刷新秒开 (默认路由至 antigravity日常)
  */
 (function() {
   const DAILY_SECTION_ID = '3f37f9eb-e69b-4496-b230-dd157ff2f379';
   const CACHE_KEY = '__claude_recent_conversations_cache';
+  const COLLAPSED_KEY = '__claude_recent_collapsed';
 
   // 清除旧药丸栏残留
   const oldBar = document.getElementById('claude-projects-pills-bar');
@@ -60,7 +61,7 @@
     });
   }
 
-  // 4. 渲染最近对话列表 (Section 3: 最近)
+  // 4. 渲染最近对话列表 (Section 3: 最近，带折叠/展开按钮)
   function renderRecents() {
     const scrollContainer = document.querySelector('.relative.w-full.h-full.overflow-y-auto') ||
                             document.querySelector('[data-testid="conversation-list-sidebar"]');
@@ -87,9 +88,33 @@
       recentSec.id = 'claude-recent-section';
       recentSec.className = 'claude-recent-section';
       scrollContainer.appendChild(recentSec);
+    }
 
-      // 单次事件委托，统一处理所有最近会话点击无刷新跳转
+    // 绑定事件委托（确保即使元素已存在也能绑定最新事件）
+    if (recentSec.dataset.hookedVersion !== '2') {
+      recentSec.dataset.hookedVersion = '2';
       recentSec.addEventListener('click', (e) => {
+        // A. 点击折叠/展开按钮
+        const toggleBtn = e.target.closest('.claude-recent-toggle-btn');
+        if (toggleBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          const isCurrentlyCollapsed = recentSec.classList.contains('is-collapsed');
+          const nextCollapsed = !isCurrentlyCollapsed;
+          if (nextCollapsed) {
+            recentSec.classList.add('is-collapsed');
+            toggleBtn.setAttribute('aria-expanded', 'false');
+          } else {
+            recentSec.classList.remove('is-collapsed');
+            toggleBtn.setAttribute('aria-expanded', 'true');
+          }
+          try {
+            localStorage.setItem(COLLAPSED_KEY, nextCollapsed ? 'true' : 'false');
+          } catch (err) {}
+          return;
+        }
+
+        // B. 点击会话项：SPA 无刷新秒开
         const link = e.target.closest('.claude-recent-item');
         if (link && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
           e.preventDefault();
@@ -103,6 +128,13 @@
           }
         }
       }, true);
+    }
+
+    const isCollapsed = localStorage.getItem(COLLAPSED_KEY) === 'true';
+    if (isCollapsed) {
+      if (!recentSec.classList.contains('is-collapsed')) recentSec.classList.add('is-collapsed');
+    } else {
+      if (recentSec.classList.contains('is-collapsed')) recentSec.classList.remove('is-collapsed');
     }
 
     const currentPath = window.location.pathname;
@@ -120,7 +152,14 @@
     }).join('');
 
     const newHtml = `
-      <div class="claude-recent-header">最近</div>
+      <div class="claude-recent-header">
+        <button type="button" class="claude-recent-toggle-btn" aria-expanded="${!isCollapsed}">
+          <span class="truncate">最近</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 -960 960 960" fill="currentColor" class="claude-recent-chevron">
+            <path d="M517.85-480l-184-184L376-706.15L602.15-480L376-253.85L333.85-296l184-184Z"></path>
+          </svg>
+        </button>
+      </div>
       <div class="claude-recent-list">
         ${listHtml}
       </div>

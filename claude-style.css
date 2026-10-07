@@ -370,7 +370,7 @@ div[data-index]:has(button[data-project-card="true"]) {
 }
 
 /* ==========================================================================
-   8. 侧边栏最近对话列表（Section 3: 最近）
+   8. 侧边栏最近对话列表（Section 3: 最近，支持折叠/展开）
    ========================================================================== */
 .claude-recent-section {
   margin-top: 10px;
@@ -382,11 +382,56 @@ div[data-index]:has(button[data-project-card="true"]) {
 
 .claude-recent-header {
   padding: 4px 8px 6px 8px;
+  user-select: none;
+  display: flex;
+  align-items: center;
+}
+
+.claude-recent-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
   font-family: var(--cm-sans) !important;
   font-size: 12px;
   font-weight: 500;
   color: var(--text-muted);
-  user-select: none;
+  outline: none;
+  transition: color 0.12s ease;
+}
+
+.claude-recent-toggle-btn:hover {
+  color: var(--text-bold);
+}
+
+.claude-recent-chevron {
+  width: 14px;
+  height: 14px;
+  opacity: 0.6;
+  transform-origin: center;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.claude-recent-toggle-btn:hover .claude-recent-chevron {
+  opacity: 0.95;
+}
+
+/* 展开态：箭头朝下 rotate(90deg) */
+.claude-recent-toggle-btn[aria-expanded="true"] .claude-recent-chevron {
+  transform: rotate(90deg);
+}
+
+/* 折叠态：箭头朝右 rotate(0deg) */
+.claude-recent-toggle-btn[aria-expanded="false"] .claude-recent-chevron {
+  transform: rotate(0deg);
+}
+
+/* 折叠时隐藏最近对话列表 */
+.claude-recent-section.is-collapsed .claude-recent-list {
+  display: none !important;
 }
 
 .claude-recent-list {
@@ -424,4 +469,5 @@ div[data-index]:has(button[data-project-card="true"]) {
   color: var(--text-bold) !important;
   font-weight: 500 !important;
 }
+
 
