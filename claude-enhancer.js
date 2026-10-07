@@ -228,15 +228,17 @@
       }
 
       // 3. 用户手动点击折叠/展开主栏（Requirement 4: 手动展开过的栏绝不被自动折叠）
-      const triggerBtn = e.target.closest('button[data-testid="tool-group-collapsible"], button[data-testid="thinking-collapsible-trigger"]');
+      const triggerBtn = e.target.closest('button[data-testid="tool-group-collapsible"], button[data-testid="thinking-collapsible-trigger"], button[data-testid="worked-for-collapsible"]');
       if (triggerBtn) {
         const wasExpanded = triggerBtn.getAttribute('aria-expanded') === 'true';
         if (!wasExpanded) {
-          // 用户手动展开
+          // 用户手动展开：打上用户已展开标记，防止被自动折叠
           triggerBtn.dataset.claudeUserOpened = 'true';
+          delete triggerBtn.dataset.claudeUserClosed;
         } else {
-          // 用户手动折叠
+          // 用户手动折叠：移除展开标记并标记已手动关闭
           delete triggerBtn.dataset.claudeUserOpened;
+          triggerBtn.dataset.claudeUserClosed = 'true';
         }
       }
     }, true);
@@ -246,20 +248,26 @@
   function translateChinese(str) {
     if (!str || typeof str !== 'string') return str;
     return str
-      .replace(/Exploring (\d+) files?, running (\d+) commands?/gi, '探索 $1 个文件，运行 $2 条命令')
-      .replace(/Explored (\d+) files?, ran (\d+) commands?/gi, '已探索 $1 个文件，已运行 $2 条命令')
       .replace(/Exploring (\d+) files?/gi, '探索 $1 个文件')
       .replace(/Explored (\d+) files?/gi, '已探索 $1 个文件')
+      .replace(/Exploring (\d+) search(?:es)?/gi, '探索 $1 次搜索')
+      .replace(/Explored (\d+) search(?:es)?/gi, '已探索 $1 次搜索')
+      .replace(/(\d+)\s*tasks?/gi, '$1 个任务')
       .replace(/running (\d+) commands?/gi, '运行 $1 条命令')
       .replace(/ran (\d+) commands?/gi, '已运行 $1 条命令')
-      .replace(/Thought for (\d+)s/gi, '已思考 $1 秒')
-      .replace(/Thought for (\d+)m/gi, '已思考 $1 分钟')
-      .replace(/Worked for (\d+)s/gi, '已耗时 $1 秒')
+      .replace(/Worked for (\d+)m\s*(\d+)s/gi, '已耗时 $1 分 $2 秒')
       .replace(/Worked for (\d+)m/gi, '已耗时 $1 分钟')
-      .replace(/^Thinking\.\.\.$/gi, '思考中...')
-      .replace(/^Running\.\.\.$/gi, '执行中...')
-      .replace(/^Working\.\.+/gi, '执行中...')
-      .replace(/^Edited/gi, '已编辑');
+      .replace(/Worked for (\d+)s/gi, '已耗时 $1 秒')
+      .replace(/Thought for (\d+)m\s*(\d+)s/gi, '已思考 $1 分 $2 秒')
+      .replace(/Thought for (\d+)m/gi, '已思考 $1 分钟')
+      .replace(/Thought for (\d+)s/gi, '已思考 $1 秒')
+      .replace(/^Thinking\.*/gi, '思考中...')
+      .replace(/^Running\.*/gi, '执行中...')
+      .replace(/^Working\.*/gi, '执行中...')
+      .replace(/^Searching\s+(.+)$/gi, '正在搜索 $1')
+      .replace(/^Searched\s+(.+)$/gi, '已搜索 $1')
+      .replace(/^Edited/gi, '已编辑')
+      .replace(/^Load older messages$/gi, '加载更早消息');
   }
 
   // C. 主处理逻辑
@@ -267,17 +275,14 @@
     const turns = document.querySelectorAll('div.group.w-full.scroll-mt-4');
 
     turns.forEach((turn) => {
-      const responseEl = turn.querySelector('[data-testid="planner-response-text"]');
-      const hasResponseText = responseEl && responseEl.textContent.trim().length > 0;
-
-      // 查找本轮全部抽屉触发按钮
-      const triggers = turn.querySelectorAll('button[data-testid="tool-group-collapsible"], button[data-testid="thinking-collapsible-trigger"]');
+      // 查找本轮全部抽屉触发按钮（包含工具组、耗时汇总、思考过程）
+      const triggers = turn.querySelectorAll('button[data-testid="tool-group-collapsible"], button[data-testid="thinking-collapsible-trigger"], button[data-testid="worked-for-collapsible"]');
 
       triggers.forEach((btn) => {
         // (1) 标题文本汉化 (Requirement 6)
         const span = btn.querySelector('span');
         if (span && span.textContent) {
-          const translated = translateChinese(span.textContent);
+          const translated = translateChinese(span.textContent.trim());
           if (span.textContent !== translated) {
             span.textContent = translated;
           }
@@ -289,9 +294,9 @@
           btn.setAttribute('aria-label', translateChinese(btn.getAttribute('aria-label')));
         }
 
-        // (2) 正文开始输出时自动折叠前栏，但用户手动展开过的除外 (Requirement 2 & 4)
+        // (2) 默认折叠：非用户手动展开时，保持折叠 (Requirement: 命令不要默认展开)
         const isExpanded = btn.getAttribute('aria-expanded') === 'true';
-        if (hasResponseText && isExpanded) {
+        if (isExpanded) {
           if (btn.dataset.claudeUserOpened !== 'true') {
             btn.click();
             btn.dataset.claudeAutoCollapsed = 'true';
@@ -443,7 +448,37 @@
           });
         }
       });
+
+      // 扫描并汉化本轮中的状态标签（如 Edited、Searching、Worked for 等）
+      const statusSpans = turn.querySelectorAll('span, button');
+      statusSpans.forEach((sp) => {
+        if (sp.children.length === 0 && sp.textContent) {
+          const txt = sp.textContent.trim();
+          if (/^(Edited|Worked for|Thought for|Searching|Searched|Exploring|Explored|Load older messages)/i.test(txt)) {
+            const trans = translateChinese(txt);
+            if (txt !== trans) {
+              sp.textContent = trans;
+            }
+          }
+        }
+      });
     });
+
+    // 全局即时扫描并汉化动态微文字（如 Working / Thinking / Running）
+    try {
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) {
+        const val = node.nodeValue?.trim();
+        if (val && /^Working\.*/i.test(val)) {
+          node.nodeValue = node.nodeValue.replace(/Working/i, '执行中');
+        } else if (val && /^Thinking\.*/i.test(val)) {
+          node.nodeValue = node.nodeValue.replace(/Thinking/i, '思考中');
+        } else if (val && /^Running\.*/i.test(val)) {
+          node.nodeValue = node.nodeValue.replace(/Running/i, '执行中');
+        }
+      }
+    } catch (e) {}
   }
 
   // D. 实时响应 MutationObserver（毫秒级监听流式输出与工具调用）

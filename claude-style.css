@@ -611,18 +611,36 @@ div.relative.p-px.rounded-xl.bg-card-border:has(div[data-quotable="true"]) > .bg
   }
 }
 
+body.theme-dark div.relative.p-px.rounded-xl.bg-card-border:has(div[data-quotable="true"]) > .bg-card,
+html.dark div.relative.p-px.rounded-xl.bg-card-border:has(div[data-quotable="true"]) > .bg-card,
+[data-theme="dark"] div.relative.p-px.rounded-xl.bg-card-border:has(div[data-quotable="true"]) > .bg-card {
+  background-color: #2a2a28 !important;
+  border-color: #383836 !important;
+}
+
 /* ==========================================================================
    11. AI 思考与工具折叠栏轻量化 (Thinking & Tool Pills)
    ========================================================================== */
-button[data-testid="thinking-collapsible-trigger"] {
-  border-radius: 8px !important;
+button[data-testid="thinking-collapsible-trigger"],
+button[data-testid="tool-group-collapsible"],
+button[data-testid="worked-for-collapsible"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
   color: var(--text-muted) !important;
   font-size: 13px !important;
-  transition: background-color 0.15s ease, color 0.15s ease !important;
+  transition: color 0.15s ease !important;
 }
 
-button[data-testid="thinking-collapsible-trigger"]:hover {
-  background-color: var(--muted) !important;
+button[data-testid="thinking-collapsible-trigger"]:hover,
+button[data-testid="tool-group-collapsible"]:hover,
+button[data-testid="worked-for-collapsible"]:hover {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
   color: var(--text-bold) !important;
 }
 
@@ -645,63 +663,91 @@ button.claude-recent-toggle-btn:active {
 }
 
 /* ==========================================================================
-   13. Claude 统一思考与工具执行抽屉 (Claude-Style Unified Thought & Execution Drawer)
+   13. Claude 统一思考与工具栏（纯文本极简风，无边框无卡片背景）
    ========================================================================== */
 
-/* 1. 抽屉触发器胶囊栏（默认/折叠态） */
+/* 1. 抽屉触发器（纯文字风格，彻底移除所有外框、背景与阴影） */
 button[data-testid="tool-group-collapsible"],
 button[data-testid="thinking-collapsible-trigger"],
 button[data-testid="worked-for-collapsible"] {
-  background-color: var(--muted) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 8px !important;
-  padding: 5px 10px !important;
-  min-height: 32px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 3px 0 !important;
+  min-height: unset !important;
+  height: auto !important;
   font-family: var(--cm-sans) !important;
-  font-size: 12.5px !important;
+  font-size: 13px !important;
   font-weight: 500 !important;
-  color: var(--text) !important;
-  transition: all 0.15s ease !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+  color: var(--text-muted) !important;
+  transition: color 0.15s ease !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
 }
 
 button[data-testid="tool-group-collapsible"]:hover,
 button[data-testid="thinking-collapsible-trigger"]:hover,
 button[data-testid="worked-for-collapsible"]:hover {
-  background-color: var(--sidebar-muted) !important;
-  border-color: var(--border-focus) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
   color: var(--text-bold) !important;
 }
 
-/* 带有需要介入警告时的触发栏 */
+/* 带有需要介入警告时的触发栏：纯文字警示色，不添加任何厚重外框 */
 button[data-testid="tool-group-collapsible"].has-intervention,
-button[data-testid="thinking-collapsible-trigger"].has-intervention {
-  border-color: rgba(217, 119, 87, 0.6) !important;
-  background-color: rgba(217, 119, 87, 0.06) !important;
+button[data-testid="thinking-collapsible-trigger"].has-intervention,
+button[data-testid="worked-for-collapsible"].has-intervention {
+  border: none !important;
+  background: transparent !important;
+  color: #c25e3e !important;
 }
 
-/* 2. 展开区域高度约束：约 6 行 (~140px)，内部原生丝滑滚动 */
+/* 2. 展开区域高度约束：约 6 行 (~140px)，彻底移除框线、边框与底色 */
 div.relative:has(> button[data-testid="tool-group-collapsible"]) > div.relative > div.overflow-y-auto,
 div.relative:has(> button[data-testid="thinking-collapsible-trigger"]) > div.relative > div.overflow-y-auto,
+div.relative:has(> button[data-testid="worked-for-collapsible"]) > div.relative > div.overflow-y-auto,
 .claude-running-drawer {
   max-height: 140px !important;
   overflow-y: auto !important;
   overscroll-behavior: contain !important;
-  margin-top: 4px !important;
-  margin-bottom: 6px !important;
-  padding: 4px 6px !important;
-  border-radius: 8px !important;
-  background-color: rgba(0, 0, 0, 0.015) !important;
-  border: 1px solid var(--border) !important;
+  margin-top: 2px !important;
+  margin-bottom: 4px !important;
+  padding: 2px 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-left: none !important;
+  box-shadow: none !important;
 }
 
 @media (prefers-color-scheme: dark) {
   div.relative:has(> button[data-testid="tool-group-collapsible"]) > div.relative > div.overflow-y-auto,
   div.relative:has(> button[data-testid="thinking-collapsible-trigger"]) > div.relative > div.overflow-y-auto,
+  div.relative:has(> button[data-testid="worked-for-collapsible"]) > div.relative > div.overflow-y-auto,
   .claude-running-drawer {
-    background-color: rgba(255, 255, 255, 0.02) !important;
-    border-color: var(--border) !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-left: none !important;
+    box-shadow: none !important;
   }
+}
+
+body.theme-dark div.relative:has(> button[data-testid="tool-group-collapsible"]) > div.relative > div.overflow-y-auto,
+body.theme-dark div.relative:has(> button[data-testid="thinking-collapsible-trigger"]) > div.relative > div.overflow-y-auto,
+body.theme-dark div.relative:has(> button[data-testid="worked-for-collapsible"]) > div.relative > div.overflow-y-auto,
+body.theme-dark .claude-running-drawer {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-left: none !important;
+  box-shadow: none !important;
 }
 
 /* 3. 连续相同调用合并行隐藏 */
@@ -709,52 +755,36 @@ div.relative:has(> button[data-testid="thinking-collapsible-trigger"]) > div.rel
   display: none !important;
 }
 
-/* 4. 重复调用计数徽标 (×N) */
+/* 4. 重复调用计数徽标 (×N)：纯文本小标识 */
 .claude-dup-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 17px;
-  padding: 0 6px;
-  margin-left: 6px;
-  border-radius: 9999px;
-  background-color: rgba(0, 0, 0, 0.06);
+  padding: 0 4px;
+  margin-left: 4px;
+  background: transparent;
   color: var(--text-muted);
   font-family: var(--cm-sans) !important;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: -0.01em;
   user-select: none;
   flex-shrink: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  .claude-dup-pill {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--text-muted);
-  }
-}
-
-/* 5. 步骤动作名前置徽章（运行命令、查看文件等） */
+/* 5. 步骤动作名前置（纯文字，无药丸背景框） */
 .claude-step-badge {
   display: inline-flex;
   align-items: center;
-  font-size: 11.5px !important;
-  font-weight: 600 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
   color: var(--text-muted) !important;
-  background-color: rgba(0, 0, 0, 0.04) !important;
-  padding: 1px 5px !important;
-  border-radius: 4px !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
   margin-right: 6px !important;
   white-space: nowrap !important;
   flex-shrink: 0 !important;
   user-select: none !important;
-}
-
-@media (prefers-color-scheme: dark) {
-  .claude-step-badge {
-    background-color: rgba(255, 255, 255, 0.08) !important;
-  }
 }
 
 /* 6. 单行截断命令文本 */
@@ -767,11 +797,11 @@ div.relative:has(> button[data-testid="thinking-collapsible-trigger"]) > div.rel
   text-overflow: ellipsis !important;
 }
 
-/* 7. 操作小按钮（复制、展开） */
+/* 7. 操作小按钮（复制、展开）：纯文本超链接交互，无任何外框 */
 .claude-step-actions {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   margin-left: auto;
   padding-left: 8px;
   flex-shrink: 0;
@@ -781,39 +811,39 @@ div.relative:has(> button[data-testid="thinking-collapsible-trigger"]) > div.rel
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-  background-color: var(--surface);
+  padding: 0 2px;
+  border: none !important;
+  background: transparent !important;
   color: var(--text-muted);
   font-family: var(--cm-sans) !important;
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 11.5px;
+  font-weight: 400;
   cursor: pointer;
   outline: none;
-  transition: all 0.12s ease;
+  transition: color 0.12s ease;
   user-select: none;
+  text-decoration: underline;
+  text-decoration-color: transparent;
 }
 
 .claude-step-btn:hover {
-  border-color: var(--border-focus);
+  border: none !important;
   color: var(--text-bold);
-  background-color: var(--sidebar-muted);
+  background: transparent !important;
+  text-decoration-color: var(--text-muted);
 }
 
 .claude-step-btn:active {
   transform: scale(0.95);
 }
 
-/* 8. 展开后的原始完整命令展示框 */
+/* 8. 展开后的原始完整命令展示（极简纯文本代码块，无厚重框体） */
 .claude-cmd-drawer {
   margin-top: 4px;
   margin-bottom: 4px;
-  padding: 6px 10px;
-  border-radius: 6px;
-  background-color: var(--muted);
-  border: 1px solid var(--border);
+  padding: 4px 0;
+  background: transparent !important;
+  border: none !important;
   overflow: hidden;
 }
 
@@ -828,44 +858,53 @@ div.relative:has(> button[data-testid="thinking-collapsible-trigger"]) > div.rel
   word-break: break-all;
   max-height: 180px;
   overflow-y: auto;
+  background: transparent !important;
+  border: none !important;
 }
 
-/* 9. 异常/权限介入提醒条（折叠态始终醒目显示） */
+/* 9. 异常/权限介入提醒条（纯净单行文字，无厚重外框） */
 .claude-intervention-strip {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 4px;
-  padding: 6px 10px;
-  background-color: rgba(217, 119, 87, 0.08);
-  border: 1px solid rgba(217, 119, 87, 0.35);
-  border-radius: 7px;
+  margin-top: 2px;
+  padding: 2px 0;
+  background: transparent !important;
+  border: none !important;
   font-family: var(--cm-sans) !important;
   font-size: 12px;
   color: #c25e3e;
   user-select: none;
-  animation: claudeFadeIn 0.2s ease-out;
 }
 
 @media (prefers-color-scheme: dark) {
   .claude-intervention-strip {
-    background-color: rgba(217, 119, 87, 0.16);
-    border-color: rgba(217, 119, 87, 0.45);
     color: #e58a6d;
   }
+}
+body.theme-dark .claude-intervention-strip {
+  color: #e58a6d;
 }
 
 .claude-alert-badge {
   display: inline-flex;
   align-items: center;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background-color: var(--accent);
-  color: #ffffff;
-  font-size: 10.5px;
+  padding: 0;
+  background: transparent !important;
+  color: #c25e3e;
+  font-size: 11px;
   font-weight: 600;
   line-height: 1.3;
   flex-shrink: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .claude-alert-badge {
+    color: #e58a6d;
+  }
+}
+body.theme-dark .claude-alert-badge {
+  color: #e58a6d;
 }
 
 .claude-alert-text {
@@ -875,6 +914,7 @@ div.relative:has(> button[data-testid="thinking-collapsible-trigger"]) > div.rel
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 
 @keyframes claudeFadeIn {
   from { opacity: 0; transform: translateY(-2px); }
