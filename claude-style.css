@@ -29,9 +29,9 @@
 /* ==========================================================================
    2. 浅色模式语义变量与原生 Tailwind v4 变量覆盖
    ========================================================================== */
-:root,
-html,
-body,
+:root:not(.dark):not([data-theme="dark"]),
+html:not(.dark):not([data-theme="dark"]),
+body:not(.dark):not([data-theme="dark"]),
 .theme-light,
 .vscode-light,
 html.light,
@@ -93,6 +93,63 @@ html.light,
 /* ==========================================================================
    3. 深色模式（中性深色阶梯）
    ========================================================================== */
+:root.dark,
+html.dark,
+body.dark,
+.dark,
+.theme-dark,
+.vscode-dark,
+[data-theme="dark"] {
+  --bg: #212121;
+  --surface: #2a2a2a;
+  --sidebar: #1b1b1b;
+  --sidebar-muted: #262626;
+  --sidebar-active: #333333;
+  --border: #3a3a3a;
+  --border-focus: #555555;
+  --muted: #282828;
+  --text: #e6e6e6;
+  --text-bold: #ffffff;
+  --text-muted: #999999;
+  --accent: #d97757;
+
+  --background: #212121 !important;
+  --color-background: #212121 !important;
+  --card: #2a2a2a !important;
+  --color-card: #2a2a2a !important;
+  --popover: #2a2a2a !important;
+
+  --sidebar: #1b1b1b !important;
+  --color-sidebar: #1b1b1b !important;
+  --sidebar-secondary: #333333 !important;
+  --color-sidebar-secondary: #333333 !important;
+  --sidebar-muted: #262626 !important;
+  --color-sidebar-muted: #262626 !important;
+
+  --secondary: #282828 !important;
+  --color-secondary: #282828 !important;
+  --secondary-foreground: #e6e6e6 !important;
+  --color-secondary-foreground: #e6e6e6 !important;
+
+  --muted: #282828 !important;
+  --color-muted: #282828 !important;
+  --muted-foreground: #999999 !important;
+  --color-muted-foreground: #999999 !important;
+
+  --border: #3a3a3a !important;
+  --color-border: #3a3a3a !important;
+  --card-border: #3a3a3a !important;
+  --color-card-border: #3a3a3a !important;
+
+  --foreground: #e6e6e6 !important;
+  --color-foreground: #e6e6e6 !important;
+  --placeholder: #999999 !important;
+  --color-placeholder: #999999 !important;
+
+  --ring: transparent !important;
+  --focus-ring-color: transparent !important;
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not(.light):not(.theme-light):not(.vscode-light):not([data-theme="light"]),
   .dark,
@@ -585,6 +642,243 @@ button.claude-recent-toggle-btn:active {
 
 [data-testid="new-conversation-button"]:hover {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* ==========================================================================
+   13. Claude 统一思考与工具执行抽屉 (Claude-Style Unified Thought & Execution Drawer)
+   ========================================================================== */
+
+/* 1. 抽屉触发器胶囊栏（默认/折叠态） */
+button[data-testid="tool-group-collapsible"],
+button[data-testid="thinking-collapsible-trigger"],
+button[data-testid="worked-for-collapsible"] {
+  background-color: var(--muted) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  padding: 5px 10px !important;
+  min-height: 32px !important;
+  font-family: var(--cm-sans) !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  color: var(--text) !important;
+  transition: all 0.15s ease !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+}
+
+button[data-testid="tool-group-collapsible"]:hover,
+button[data-testid="thinking-collapsible-trigger"]:hover,
+button[data-testid="worked-for-collapsible"]:hover {
+  background-color: var(--sidebar-muted) !important;
+  border-color: var(--border-focus) !important;
+  color: var(--text-bold) !important;
+}
+
+/* 带有需要介入警告时的触发栏 */
+button[data-testid="tool-group-collapsible"].has-intervention,
+button[data-testid="thinking-collapsible-trigger"].has-intervention {
+  border-color: rgba(217, 119, 87, 0.6) !important;
+  background-color: rgba(217, 119, 87, 0.06) !important;
+}
+
+/* 2. 展开区域高度约束：约 6 行 (~140px)，内部原生丝滑滚动 */
+div.relative:has(> button[data-testid="tool-group-collapsible"]) > div.relative > div.overflow-y-auto,
+div.relative:has(> button[data-testid="thinking-collapsible-trigger"]) > div.relative > div.overflow-y-auto,
+.claude-running-drawer {
+  max-height: 140px !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  margin-top: 4px !important;
+  margin-bottom: 6px !important;
+  padding: 4px 6px !important;
+  border-radius: 8px !important;
+  background-color: rgba(0, 0, 0, 0.015) !important;
+  border: 1px solid var(--border) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  div.relative:has(> button[data-testid="tool-group-collapsible"]) > div.relative > div.overflow-y-auto,
+  div.relative:has(> button[data-testid="thinking-collapsible-trigger"]) > div.relative > div.overflow-y-auto,
+  .claude-running-drawer {
+    background-color: rgba(255, 255, 255, 0.02) !important;
+    border-color: var(--border) !important;
+  }
+}
+
+/* 3. 连续相同调用合并行隐藏 */
+.claude-merged-row {
+  display: none !important;
+}
+
+/* 4. 重复调用计数徽标 (×N) */
+.claude-dup-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 17px;
+  padding: 0 6px;
+  margin-left: 6px;
+  border-radius: 9999px;
+  background-color: rgba(0, 0, 0, 0.06);
+  color: var(--text-muted);
+  font-family: var(--cm-sans) !important;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .claude-dup-pill {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
+  }
+}
+
+/* 5. 步骤动作名前置徽章（运行命令、查看文件等） */
+.claude-step-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  color: var(--text-muted) !important;
+  background-color: rgba(0, 0, 0, 0.04) !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  margin-right: 6px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  user-select: none !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .claude-step-badge {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+  }
+}
+
+/* 6. 单行截断命令文本 */
+.claude-cmd-text {
+  font-family: var(--cm-mono) !important;
+  font-size: 12px !important;
+  color: var(--text) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* 7. 操作小按钮（复制、展开） */
+.claude-step-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding-left: 8px;
+  flex-shrink: 0;
+}
+
+.claude-step-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background-color: var(--surface);
+  color: var(--text-muted);
+  font-family: var(--cm-sans) !important;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.12s ease;
+  user-select: none;
+}
+
+.claude-step-btn:hover {
+  border-color: var(--border-focus);
+  color: var(--text-bold);
+  background-color: var(--sidebar-muted);
+}
+
+.claude-step-btn:active {
+  transform: scale(0.95);
+}
+
+/* 8. 展开后的原始完整命令展示框 */
+.claude-cmd-drawer {
+  margin-top: 4px;
+  margin-bottom: 4px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background-color: var(--muted);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.claude-cmd-raw {
+  margin: 0;
+  padding: 0;
+  font-family: var(--cm-mono) !important;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+/* 9. 异常/权限介入提醒条（折叠态始终醒目显示） */
+.claude-intervention-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 6px 10px;
+  background-color: rgba(217, 119, 87, 0.08);
+  border: 1px solid rgba(217, 119, 87, 0.35);
+  border-radius: 7px;
+  font-family: var(--cm-sans) !important;
+  font-size: 12px;
+  color: #c25e3e;
+  user-select: none;
+  animation: claudeFadeIn 0.2s ease-out;
+}
+
+@media (prefers-color-scheme: dark) {
+  .claude-intervention-strip {
+    background-color: rgba(217, 119, 87, 0.16);
+    border-color: rgba(217, 119, 87, 0.45);
+    color: #e58a6d;
+  }
+}
+
+.claude-alert-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background-color: var(--accent);
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  flex-shrink: 0;
+}
+
+.claude-alert-text {
+  font-weight: 500;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes claudeFadeIn {
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 

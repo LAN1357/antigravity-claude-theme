@@ -191,17 +191,295 @@
     });
   }
 
+  // 6. Claude 统一思考与执行栏控制器 (Unified Thought & Tool Execution Drawer)
+
+  // A. 全局事件委托：监听复制/展开以及用户手动折叠行为
+  if (!window.__claude_thought_events_bound) {
+    window.__claude_thought_events_bound = true;
+
+    document.addEventListener('click', (e) => {
+      // 1. 复制原始命令
+      const copyBtn = e.target.closest('.claude-btn-copy');
+      if (copyBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const cmd = copyBtn.getAttribute('data-cmd');
+        if (cmd && navigator.clipboard) {
+          navigator.clipboard.writeText(cmd).then(() => {
+            copyBtn.textContent = '已复制';
+            setTimeout(() => { copyBtn.textContent = '复制'; }, 1500);
+          }).catch(() => {});
+        }
+        return;
+      }
+
+      // 2. 展开/折叠原始命令
+      const expandBtn = e.target.closest('.claude-btn-expand');
+      if (expandBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const drawer = expandBtn.closest('[data-testid="run-command-step"]')?.querySelector('.claude-cmd-drawer');
+        if (drawer) {
+          const isHidden = drawer.style.display === 'none';
+          drawer.style.display = isHidden ? 'block' : 'none';
+          expandBtn.textContent = isHidden ? '收起' : '展开';
+        }
+        return;
+      }
+
+      // 3. 用户手动点击折叠/展开主栏（Requirement 4: 手动展开过的栏绝不被自动折叠）
+      const triggerBtn = e.target.closest('button[data-testid="tool-group-collapsible"], button[data-testid="thinking-collapsible-trigger"]');
+      if (triggerBtn) {
+        const wasExpanded = triggerBtn.getAttribute('aria-expanded') === 'true';
+        if (!wasExpanded) {
+          // 用户手动展开
+          triggerBtn.dataset.claudeUserOpened = 'true';
+        } else {
+          // 用户手动折叠
+          delete triggerBtn.dataset.claudeUserOpened;
+        }
+      }
+    }, true);
+  }
+
+  // B. 文本汉化映射表
+  function translateChinese(str) {
+    if (!str || typeof str !== 'string') return str;
+    return str
+      .replace(/Exploring (\d+) files?, running (\d+) commands?/gi, '探索 $1 个文件，运行 $2 条命令')
+      .replace(/Explored (\d+) files?, ran (\d+) commands?/gi, '已探索 $1 个文件，已运行 $2 条命令')
+      .replace(/Exploring (\d+) files?/gi, '探索 $1 个文件')
+      .replace(/Explored (\d+) files?/gi, '已探索 $1 个文件')
+      .replace(/running (\d+) commands?/gi, '运行 $1 条命令')
+      .replace(/ran (\d+) commands?/gi, '已运行 $1 条命令')
+      .replace(/Thought for (\d+)s/gi, '已思考 $1 秒')
+      .replace(/Thought for (\d+)m/gi, '已思考 $1 分钟')
+      .replace(/Worked for (\d+)s/gi, '已耗时 $1 秒')
+      .replace(/Worked for (\d+)m/gi, '已耗时 $1 分钟')
+      .replace(/^Thinking\.\.\.$/gi, '思考中...')
+      .replace(/^Running\.\.\.$/gi, '执行中...')
+      .replace(/^Working\.\.+/gi, '执行中...')
+      .replace(/^Edited/gi, '已编辑');
+  }
+
+  // C. 主处理逻辑
+  function processThoughtAndToolDocks() {
+    const turns = document.querySelectorAll('div.group.w-full.scroll-mt-4');
+
+    turns.forEach((turn) => {
+      const responseEl = turn.querySelector('[data-testid="planner-response-text"]');
+      const hasResponseText = responseEl && responseEl.textContent.trim().length > 0;
+
+      // 查找本轮全部抽屉触发按钮
+      const triggers = turn.querySelectorAll('button[data-testid="tool-group-collapsible"], button[data-testid="thinking-collapsible-trigger"]');
+
+      triggers.forEach((btn) => {
+        // (1) 标题文本汉化 (Requirement 6)
+        const span = btn.querySelector('span');
+        if (span && span.textContent) {
+          const translated = translateChinese(span.textContent);
+          if (span.textContent !== translated) {
+            span.textContent = translated;
+          }
+        }
+        if (btn.hasAttribute('title')) {
+          btn.setAttribute('title', translateChinese(btn.getAttribute('title')));
+        }
+        if (btn.hasAttribute('aria-label')) {
+          btn.setAttribute('aria-label', translateChinese(btn.getAttribute('aria-label')));
+        }
+
+        // (2) 正文开始输出时自动折叠前栏，但用户手动展开过的除外 (Requirement 2 & 4)
+        const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+        if (hasResponseText && isExpanded) {
+          if (btn.dataset.claudeUserOpened !== 'true') {
+            btn.click();
+            btn.dataset.claudeAutoCollapsed = 'true';
+          }
+        }
+
+        // (3) 报错、权限确认等需要介入时，折叠态也要显示一行醒目提示 (Requirement 3)
+        const parentRelative = btn.parentElement;
+        const scrollContainer = parentRelative?.querySelector('div.overflow-y-auto');
+
+        if (scrollContainer) {
+          const hasDestructive = !!scrollContainer.querySelector('.text-destructive, .text-danger, .text-red-500, [data-testid*="error"], [data-testid*="fail"], [data-status="error"]');
+          const permBtn = Array.from(scrollContainer.querySelectorAll('button[data-testid*="allow"], button[data-testid*="approval"], button[data-testid*="permission"]'))[0];
+          const termOutput = scrollContainer.querySelector('.xterm, [data-testid*="terminal"], [data-testid*="output"]');
+          const hasTermError = termOutput ? /command failed|exit code [1-9]/i.test(termOutput.textContent) : false;
+
+          if (hasDestructive || permBtn || hasTermError) {
+            btn.dataset.claudeHasAlert = 'true';
+            if (permBtn) btn.dataset.claudeAlertMsg = '需要授权确认：等待权限许可后继续执行';
+            else btn.dataset.claudeAlertMsg = '步骤执行报错：包含异常退出或失败命令';
+          } else {
+            delete btn.dataset.claudeHasAlert;
+            delete btn.dataset.claudeAlertMsg;
+          }
+        }
+
+        const hasAlert = btn.dataset.claudeHasAlert === 'true';
+        if (parentRelative) {
+          let alertStrip = parentRelative.querySelector(':scope > .claude-intervention-strip');
+          if (hasAlert) {
+            btn.classList.add('has-intervention');
+            const alertMsg = btn.dataset.claudeAlertMsg || '检测到步骤报错或待权限确认，点击可展开查看详情';
+            if (!alertStrip) {
+              alertStrip = document.createElement('div');
+              alertStrip.className = 'claude-intervention-strip';
+              alertStrip.innerHTML = `<span class="claude-alert-badge">需要确认</span><span class="claude-alert-text">${alertMsg}</span>`;
+              parentRelative.appendChild(alertStrip);
+            }
+          } else {
+            btn.classList.remove('has-intervention');
+            if (alertStrip) alertStrip.remove();
+          }
+        }
+
+        // (4) 展开区滚动管理与向上滚动保护 (Requirement 1 & 4)
+        if (scrollContainer) {
+          if (!scrollContainer.dataset.claudeScrollBound) {
+            scrollContainer.dataset.claudeScrollBound = 'true';
+            scrollContainer.addEventListener('scroll', () => {
+              const distanceToBottom = scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight;
+              if (distanceToBottom > 25) {
+                scrollContainer.dataset.userScrolledUp = 'true';
+              } else {
+                delete scrollContainer.dataset.userScrolledUp;
+              }
+            }, { passive: true });
+          }
+
+          // 用户未向上翻阅时，内部自动触底
+          if (scrollContainer.dataset.userScrolledUp !== 'true') {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+          }
+
+          // (5) 工具调用单行截断、动作名显示、展开复制与连续相同调用合并 ×N (Requirement 5)
+          const rowDivs = Array.from(scrollContainer.querySelectorAll('div.flex.flex-col.gap-0\\.5 > div.flex.flex-row'));
+          let prevSig = null;
+          let prevRow = null;
+          let dupCount = 1;
+
+          rowDivs.forEach((row) => {
+            const cmdStep = row.querySelector('[data-testid="run-command-step"]');
+            const fileStep = row.querySelector('[data-testid="view-file-step"]');
+            const thinkStep = row.querySelector('[data-testid="thinking-collapsible-trigger"]');
+
+            let sig = '';
+            let rawCmd = '';
+
+            if (cmdStep) {
+              const mono = cmdStep.querySelector('.font-mono');
+              rawCmd = mono?.textContent || '';
+              sig = 'cmd:' + rawCmd.trim();
+
+              // 简短动作名
+              const ranSpan = cmdStep.querySelector('.text-secondary-foreground span:first-child');
+              if (ranSpan && (ranSpan.textContent === 'Ran' || ranSpan.textContent === 'Run')) {
+                ranSpan.className = 'claude-step-badge';
+                ranSpan.textContent = '运行命令';
+              }
+
+              // 操作按钮（复制、展开）与展开代码框
+              if (!cmdStep.querySelector('.claude-step-actions')) {
+                const actionGroup = document.createElement('div');
+                actionGroup.className = 'claude-step-actions';
+                actionGroup.innerHTML = `
+                  <button type="button" class="claude-step-btn claude-btn-copy" data-cmd="${rawCmd.replace(/"/g, '&quot;')}" title="复制原始命令">复制</button>
+                  <button type="button" class="claude-step-btn claude-btn-expand" title="展开/收起完整命令">展开</button>
+                `;
+                const stepHeader = cmdStep.querySelector('[role="button"]') || cmdStep.children[0];
+                if (stepHeader) {
+                  stepHeader.appendChild(actionGroup);
+                }
+
+                const drawer = document.createElement('div');
+                drawer.className = 'claude-cmd-drawer';
+                drawer.style.display = 'none';
+                const pre = document.createElement('pre');
+                pre.className = 'claude-cmd-raw';
+                const code = document.createElement('code');
+                code.textContent = rawCmd;
+                pre.appendChild(code);
+                drawer.appendChild(pre);
+                cmdStep.appendChild(drawer);
+              }
+            } else if (fileStep) {
+              sig = 'file:' + fileStep.textContent.trim();
+              const viewSpan = fileStep.querySelector('.text-secondary-foreground span:first-child');
+              if (viewSpan && (viewSpan.textContent === 'Analyzed' || viewSpan.textContent === 'Read')) {
+                viewSpan.className = 'claude-step-badge';
+                viewSpan.textContent = '查看文件';
+              }
+            } else if (thinkStep) {
+              sig = 'think:' + thinkStep.textContent.trim();
+            } else {
+              sig = 'other:' + row.textContent.trim().slice(0, 60);
+            }
+
+            // 连续相同调用合并为 "×N"
+            if (sig && sig === prevSig) {
+              dupCount++;
+              row.classList.add('claude-merged-row');
+              if (prevRow) {
+                let pill = prevRow.querySelector('.claude-dup-pill');
+                if (!pill) {
+                  pill = document.createElement('span');
+                  pill.className = 'claude-dup-pill';
+                  const target = prevRow.querySelector('.truncate > div') || prevRow.querySelector('.truncate') || prevRow.querySelector('.min-w-0');
+                  if (target) target.appendChild(pill);
+                }
+                pill.textContent = '×' + dupCount;
+              }
+            } else {
+              prevSig = sig;
+              prevRow = row;
+              dupCount = 1;
+              row.classList.remove('claude-merged-row');
+              const oldPill = row.querySelector('.claude-dup-pill');
+              if (oldPill) oldPill.remove();
+            }
+          });
+        }
+      });
+    });
+  }
+
+  // D. 实时响应 MutationObserver（毫秒级监听流式输出与工具调用）
+  let dockDebounceTimer = null;
+  function setupDockObserver() {
+    const convView = document.querySelector('[data-testid="conversation-view"]');
+    if (!convView || convView.dataset.claudeDockObserved) return;
+    convView.dataset.claudeDockObserved = 'true';
+
+    const observer = new MutationObserver(() => {
+      clearTimeout(dockDebounceTimer);
+      dockDebounceTimer = setTimeout(processThoughtAndToolDocks, 40);
+    });
+
+    observer.observe(convView, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+  }
+
   // 暴露给注入进程热更新调用
   window.__claude_render_recents = renderRecents;
+  window.__claude_process_docks = processThoughtAndToolDocks;
 
   function tick() {
     hookNewChat();
     renameHeaders();
     renderRecents();
     hidePromoButtons();
+    processThoughtAndToolDocks();
+    setupDockObserver();
   }
 
   window.__claude_enhancer_interval = setInterval(tick, 600);
   tick();
 })();
+
 
