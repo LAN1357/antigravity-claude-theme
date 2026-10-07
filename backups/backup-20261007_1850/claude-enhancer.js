@@ -181,16 +181,6 @@
     }
   }
 
-  // 5. 净化顶部杂项按钮（如“安装 IDE”等非必要推广）
-  function hidePromoButtons() {
-    const btns = document.querySelectorAll('button');
-    btns.forEach(b => {
-      if (b.textContent.trim() === '安装 IDE') {
-        b.style.display = 'none';
-      }
-    });
-  }
-
   // 暴露给注入进程热更新调用
   window.__claude_render_recents = renderRecents;
 
@@ -198,10 +188,8 @@
     hookNewChat();
     renameHeaders();
     renderRecents();
-    hidePromoButtons();
   }
 
   window.__claude_enhancer_interval = setInterval(tick, 600);
   tick();
 })();
-

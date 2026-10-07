@@ -370,7 +370,7 @@ div[data-index]:has(button[data-project-card="true"]) {
 }
 
 /* ==========================================================================
-   8. 侧边栏最近对话列表（Section 3: 最近，平滑折叠 + 高亮标识）
+   8. 侧边栏最近对话列表（Section 3: 最近，支持折叠/展开）
    ========================================================================== */
 .claude-recent-section {
   margin-top: 10px;
@@ -390,7 +390,7 @@ div[data-index]:has(button[data-project-card="true"]) {
 .claude-recent-toggle-btn {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   background: transparent;
   border: none;
   padding: 0;
@@ -412,7 +412,7 @@ div[data-index]:has(button[data-project-card="true"]) {
   height: 14px;
   opacity: 0.6;
   transform-origin: center;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
+  transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
 .claude-recent-toggle-btn:hover .claude-recent-chevron {
@@ -429,22 +429,15 @@ div[data-index]:has(button[data-project-card="true"]) {
   transform: rotate(0deg);
 }
 
-/* 平滑风琴手风琴折叠动画 */
+/* 折叠时隐藏最近对话列表 */
+.claude-recent-section.is-collapsed .claude-recent-list {
+  display: none !important;
+}
+
 .claude-recent-list {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  max-height: 2000px;
-  opacity: 1;
-  transform-origin: top center;
-  transition: max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
-  overflow: hidden;
-}
-
-.claude-recent-section.is-collapsed .claude-recent-list {
-  max-height: 0px !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
 }
 
 .claude-recent-item {
@@ -461,7 +454,7 @@ div[data-index]:has(button[data-project-card="true"]) {
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
-  transition: background-color 0.12s ease, color 0.12s ease, transform 0.12s ease;
+  transition: background-color 0.12s ease, color 0.12s ease;
   user-select: none;
   box-sizing: border-box;
 }
@@ -469,123 +462,12 @@ div[data-index]:has(button[data-project-card="true"]) {
 .claude-recent-item:hover {
   background-color: var(--sidebar-muted) !important;
   color: var(--text-bold) !important;
-  transform: translateX(2px);
 }
 
-/* 当前处于激活态的对话：沉稳中性灰底色 + 陶土橙微标识线 */
 .claude-recent-item.active {
   background-color: var(--sidebar-active) !important;
   color: var(--text-bold) !important;
   font-weight: 500 !important;
-  border-left: 2.5px solid var(--accent) !important;
-  padding-left: 6.5px !important;
-  border-radius: 2px 6px 6px 2px !important;
 }
-
-/* ==========================================================================
-   9. macOS 原生极细浮动滚动条 (macOS Floating Slim Scrollbars)
-   ========================================================================== */
-*::-webkit-scrollbar {
-  width: 5px !important;
-  height: 5px !important;
-}
-
-*::-webkit-scrollbar-track {
-  background: transparent !important;
-}
-
-*::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.12) !important;
-  border-radius: 9999px !important;
-  transition: background-color 0.2s ease !important;
-}
-
-*::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(0, 0, 0, 0.28) !important;
-}
-
-/* 侧边栏全面隐藏滚动条轨道，保持边缘纯净 */
-.relative.w-full.h-full.overflow-y-auto,
-[data-testid="conversation-list-sidebar"],
-aside,
-.bg-sidebar {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-
-.relative.w-full.h-full.overflow-y-auto::-webkit-scrollbar,
-[data-testid="conversation-list-sidebar"]::-webkit-scrollbar,
-aside::-webkit-scrollbar,
-.bg-sidebar::-webkit-scrollbar {
-  display: none !important;
-  width: 0px !important;
-  height: 0px !important;
-}
-
-@media (prefers-color-scheme: dark) {
-  *::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.16) !important;
-  }
-  *::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(255, 255, 255, 0.35) !important;
-  }
-}
-
-
-/* ==========================================================================
-   10. 用户提问气泡高定质感 (Claude-Style User Prompt Card)
-   ========================================================================== */
-div.relative.p-px.rounded-xl.bg-card-border:has(div[data-quotable="true"]) {
-  background-color: transparent !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
-}
-
-div.relative.p-px.rounded-xl.bg-card-border:has(div[data-quotable="true"]) > .bg-card {
-  background-color: #f2f0eb !important;
-  border: 1px solid #e8e6e0 !important;
-  border-radius: 14px !important;
-  padding: 8px 12px !important;
-}
-
-@media (prefers-color-scheme: dark) {
-  div.relative.p-px.rounded-xl.bg-card-border:has(div[data-quotable="true"]) > .bg-card {
-    background-color: #2a2a28 !important;
-    border-color: #383836 !important;
-  }
-}
-
-/* ==========================================================================
-   11. AI 思考与工具折叠栏轻量化 (Thinking & Tool Pills)
-   ========================================================================== */
-button[data-testid="thinking-collapsible-trigger"] {
-  border-radius: 8px !important;
-  color: var(--text-muted) !important;
-  font-size: 13px !important;
-  transition: background-color 0.15s ease, color 0.15s ease !important;
-}
-
-button[data-testid="thinking-collapsible-trigger"]:hover {
-  background-color: var(--muted) !important;
-  color: var(--text-bold) !important;
-}
-
-/* ==========================================================================
-   12. Apple 原生物理微交互 (Spring Physics Feedback on Press)
-   ========================================================================== */
-button[data-testid="send-button"]:active {
-  transform: scale(0.92) !important;
-  transition: transform 0.08s ease-out !important;
-}
-
-[data-testid="new-conversation-button"]:active,
-button.claude-recent-toggle-btn:active {
-  transform: scale(0.97) !important;
-  transition: transform 0.08s ease-out !important;
-}
-
-[data-testid="new-conversation-button"]:hover {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-}
-
 
 
