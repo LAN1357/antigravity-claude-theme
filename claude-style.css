@@ -619,9 +619,8 @@ html.dark div.relative.p-px.rounded-xl.bg-card-border:has(div[data-quotable="tru
 }
 
 /* ==========================================================================
-   11. AI 思考与工具折叠栏轻量化 (Thinking & Tool Pills)
+   11. 工具折叠栏轻量化 (Tool Pills)
    ========================================================================== */
-button[data-testid="thinking-collapsible-trigger"],
 button[data-testid="tool-group-collapsible"],
 button[data-testid="worked-for-collapsible"] {
   background: transparent !important;
@@ -634,7 +633,6 @@ button[data-testid="worked-for-collapsible"] {
   transition: color 0.15s ease !important;
 }
 
-button[data-testid="thinking-collapsible-trigger"]:hover,
 button[data-testid="tool-group-collapsible"]:hover,
 button[data-testid="worked-for-collapsible"]:hover {
   background: transparent !important;
@@ -663,12 +661,11 @@ button.claude-recent-toggle-btn:active {
 }
 
 /* ==========================================================================
-   13. Claude 统一思考与工具栏（纯文本极简风，无边框无卡片背景）
+   13. Claude 统一工具执行栏（纯文本极简风，无边框无卡片背景；思考流保留官方原生）
    ========================================================================== */
 
 /* 1. 抽屉触发器（纯文字风格，彻底移除所有外框、背景与阴影） */
 button[data-testid="tool-group-collapsible"],
-button[data-testid="thinking-collapsible-trigger"],
 button[data-testid="worked-for-collapsible"] {
   background: transparent !important;
   background-color: transparent !important;
@@ -689,7 +686,6 @@ button[data-testid="worked-for-collapsible"] {
 }
 
 button[data-testid="tool-group-collapsible"]:hover,
-button[data-testid="thinking-collapsible-trigger"]:hover,
 button[data-testid="worked-for-collapsible"]:hover {
   background: transparent !important;
   background-color: transparent !important;
@@ -700,7 +696,6 @@ button[data-testid="worked-for-collapsible"]:hover {
 
 /* 带有需要介入警告时的触发栏：纯文字警示色，不添加任何厚重外框 */
 button[data-testid="tool-group-collapsible"].has-intervention,
-button[data-testid="thinking-collapsible-trigger"].has-intervention,
 button[data-testid="worked-for-collapsible"].has-intervention {
   border: none !important;
   background: transparent !important;
@@ -709,7 +704,6 @@ button[data-testid="worked-for-collapsible"].has-intervention {
 
 /* 2. 展开区域高度约束：约 6 行 (~140px)，彻底移除框线、边框与底色 */
 div.relative:has(> button[data-testid="tool-group-collapsible"]) > div.relative > div.overflow-y-auto,
-div.relative:has(> button[data-testid="thinking-collapsible-trigger"]) > div.relative > div.overflow-y-auto,
 div.relative:has(> button[data-testid="worked-for-collapsible"]) > div.relative > div.overflow-y-auto,
 .claude-running-drawer {
   max-height: 140px !important;
@@ -728,7 +722,6 @@ div.relative:has(> button[data-testid="worked-for-collapsible"]) > div.relative 
 
 @media (prefers-color-scheme: dark) {
   div.relative:has(> button[data-testid="tool-group-collapsible"]) > div.relative > div.overflow-y-auto,
-  div.relative:has(> button[data-testid="thinking-collapsible-trigger"]) > div.relative > div.overflow-y-auto,
   div.relative:has(> button[data-testid="worked-for-collapsible"]) > div.relative > div.overflow-y-auto,
   .claude-running-drawer {
     background: transparent !important;
@@ -740,7 +733,6 @@ div.relative:has(> button[data-testid="worked-for-collapsible"]) > div.relative 
 }
 
 body.theme-dark div.relative:has(> button[data-testid="tool-group-collapsible"]) > div.relative > div.overflow-y-auto,
-body.theme-dark div.relative:has(> button[data-testid="thinking-collapsible-trigger"]) > div.relative > div.overflow-y-auto,
 body.theme-dark div.relative:has(> button[data-testid="worked-for-collapsible"]) > div.relative > div.overflow-y-auto,
 body.theme-dark .claude-running-drawer {
   background: transparent !important;

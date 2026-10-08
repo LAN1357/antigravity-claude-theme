@@ -234,7 +234,7 @@
       }
 
       // 3. 用户手动点击折叠/展开主栏（Requirement 4: 手动展开过的栏绝不被自动折叠）
-      const triggerBtn = e.target.closest('button[data-testid="tool-group-collapsible"], button[data-testid="thinking-collapsible-trigger"], button[data-testid="worked-for-collapsible"]');
+      const triggerBtn = e.target.closest('button[data-testid="tool-group-collapsible"], button[data-testid="worked-for-collapsible"]');
       if (triggerBtn) {
         const wasExpanded = triggerBtn.getAttribute('aria-expanded') === 'true';
         if (!wasExpanded) {
@@ -281,8 +281,8 @@
     const turns = document.querySelectorAll('div.group.w-full.scroll-mt-4');
 
     turns.forEach((turn) => {
-      // 查找本轮全部抽屉触发按钮（包含工具组、耗时汇总、思考过程）
-      const triggers = turn.querySelectorAll('button[data-testid="tool-group-collapsible"], button[data-testid="thinking-collapsible-trigger"], button[data-testid="worked-for-collapsible"]');
+      // 查找本轮全部工具执行与耗时抽屉触发按钮（思考流保留官方原生，不进行干预）
+      const triggers = turn.querySelectorAll('button[data-testid="tool-group-collapsible"], button[data-testid="worked-for-collapsible"]');
 
       triggers.forEach((btn) => {
         // (1) 标题文本汉化 (Requirement 6)
@@ -375,7 +375,6 @@
           rowDivs.forEach((row) => {
             const cmdStep = row.querySelector('[data-testid="run-command-step"]');
             const fileStep = row.querySelector('[data-testid="view-file-step"]');
-            const thinkStep = row.querySelector('[data-testid="thinking-collapsible-trigger"]');
 
             let sig = '';
             let rawCmd = '';
@@ -423,8 +422,6 @@
                 viewSpan.className = 'claude-step-badge';
                 viewSpan.textContent = '查看文件';
               }
-            } else if (thinkStep) {
-              sig = 'think:' + thinkStep.textContent.trim();
             } else {
               sig = 'other:' + row.textContent.trim().slice(0, 60);
             }
