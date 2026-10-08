@@ -47,6 +47,30 @@ if [ -d "$APP_SUPPORT" ]; then
     rm -rf "$APP_SUPPORT/DawnWebGPUCache" 2>/dev/null
 fi
 
+# Step 2.5: 检查并修复代码签名（防止 AutoUpdater 导致的无限重启闪退循环）
+if ! codesign -v /Applications/Antigravity.app 2>/dev/null; then
+    echo ">> [!] 检测到 Antigravity 代码签名损坏（会导致 AutoUpdater 每隔十秒强制重启闪退）"
+    ZIP_PATH="$HOME/Library/Caches/com.google.antigravity/pending/Antigravity.zip"
+    if [ ! -f "$ZIP_PATH" ]; then
+        ZIP_PATH="$HOME/Library/Caches/com.google.antigravity/update.zip"
+    fi
+    if [ -f "$ZIP_PATH" ]; then
+        echo ">> 正在从已下载的官方安装包恢复 Google 官方纯净正版..."
+        rm -rf /tmp/antigravity_repair_update 2>/dev/null
+        mkdir -p /tmp/antigravity_repair_update
+        unzip -q "$ZIP_PATH" -d /tmp/antigravity_repair_update
+        if [ -d "/tmp/antigravity_repair_update/Antigravity.app" ]; then
+            rm -rf /Applications/Antigravity.app.bak 2>/dev/null
+            mv /Applications/Antigravity.app /Applications/Antigravity.app.bak 2>/dev/null
+            mv /tmp/antigravity_repair_update/Antigravity.app /Applications/Antigravity.app
+            rm -rf "$HOME/Library/Caches/com.google.antigravity.ShipIt" 2>/dev/null
+            rm -rf "$HOME/Library/Caches/com.google.antigravity/pending" 2>/dev/null
+            echo ">> ✅ 已成功修复代码签名，恢复为 Google 官方认证版本！"
+        fi
+        rm -rf /tmp/antigravity_repair_update 2>/dev/null
+    fi
+fi
+
 # Step 3: 检测并配置最新代理
 echo ">> [3/6] 正在检测系统代理设置..."
 SYS_PROXY="$(scutil --proxy | awk -F' : ' '/^  HTTPSProxy/{hs=$2} /^  HTTPSPort/{hp=$2} /^  HTTPProxy/{hh=$2} /^  HTTPPort/{hport=$2} END{if(hs!=""&&hp!="")print "http://"hs":"hp; else if(hh!=""&&hport!="")print "http://"hh":"hport}')"

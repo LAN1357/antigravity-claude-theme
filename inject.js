@@ -128,6 +128,21 @@ function attachPageHooks(page) {
 }
 
 async function main() {
+  // 单实例守护锁：避免多个 inject.js 重复监听与注入
+  const PID_FILE = path.join(os.tmpdir(), `claude_inject_${PORT}.pid`);
+  try {
+    if (fs.existsSync(PID_FILE)) {
+      const oldPid = parseInt(fs.readFileSync(PID_FILE, 'utf-8').trim(), 10);
+      if (oldPid && oldPid !== process.pid) {
+        try {
+          process.kill(oldPid, 0);
+          process.kill(oldPid, 'SIGTERM');
+        } catch (e) {}
+      }
+    }
+    fs.writeFileSync(PID_FILE, String(process.pid));
+  } catch (e) {}
+
   console.log(`===============================================`);
   console.log(` Antigravity Claude-Style 实时注入与热更新服务`);
   console.log(` 调试端口: ${PORT}`);
