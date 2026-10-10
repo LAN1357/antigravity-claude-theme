@@ -1102,5 +1102,59 @@ body.dark .claude-fcm-divider,
   }
 }
 
+/* ==========================================================================
+   16. 项目列表超过5个折叠/展开按钮 (Projects "View more" / "View less")
+   ========================================================================== */
+.claude-projects-toggle-wrap {
+  padding: 4px 8px 6px 12px;
+  display: flex;
+  align-items: center;
+}
+
+.claude-projects-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--cm-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.claude-projects-toggle-btn:hover {
+  color: var(--text-bold);
+  background-color: var(--sidebar-muted, rgba(0, 0, 0, 0.04));
+}
+
+body.theme-dark .claude-projects-toggle-btn:hover,
+:root.dark .claude-projects-toggle-btn:hover,
+html.dark .claude-projects-toggle-btn:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.claude-projects-toggle-chevron {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+
+.claude-projects-toggle-wrap.is-expanded .claude-projects-toggle-chevron {
+  transform: rotate(180deg);
+}
+
+/* 增强文件链接与变更项手势提示 */
+a[href^="file://"],
+[data-file-uri],
+span[data-testid="file-title-name"] {
+  cursor: pointer !important;
+}
+
 
 

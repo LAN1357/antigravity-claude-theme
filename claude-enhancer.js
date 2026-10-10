@@ -187,6 +187,85 @@
     }
   }
 
+  // 4.5 项目列超过5个自动折叠 (超过5个隐藏剩余项，提供 View more / View less 切换)
+  const PROJECTS_EXPANDED_KEY = '__claude_projects_expanded';
+
+  function updateProjectsCollapse() {
+    const cards = Array.from(document.querySelectorAll('[data-project-card="true"]'));
+    if (!cards.length) {
+      const existingWrap = document.getElementById('claude-projects-toggle-wrap');
+      if (existingWrap) existingWrap.remove();
+      return;
+    }
+
+    const rows = cards.map(c => c.closest('.bg-sidebar.pt-1') || c.closest('.group\\/header')?.parentElement).filter(Boolean);
+    if (!rows.length) return;
+
+    const total = rows.length;
+    if (total <= 5) {
+      rows.forEach(r => {
+        if (r.style.display === 'none') r.style.display = '';
+      });
+      const existingWrap = document.getElementById('claude-projects-toggle-wrap');
+      if (existingWrap) existingWrap.remove();
+      return;
+    }
+
+    const isExpanded = localStorage.getItem(PROJECTS_EXPANDED_KEY) === 'true';
+
+    rows.forEach((r, idx) => {
+      if (idx < 5) {
+        if (r.style.display === 'none') r.style.display = '';
+      } else {
+        const targetDisplay = isExpanded ? '' : 'none';
+        if (r.style.display !== targetDisplay) r.style.display = targetDisplay;
+      }
+    });
+
+    const lastRow = rows[rows.length - 1];
+    let toggleWrap = document.getElementById('claude-projects-toggle-wrap');
+    if (!toggleWrap) {
+      toggleWrap = document.createElement('div');
+      toggleWrap.id = 'claude-projects-toggle-wrap';
+      toggleWrap.className = 'claude-projects-toggle-wrap';
+      toggleWrap.innerHTML = `
+        <button type="button" class="claude-projects-toggle-btn" aria-expanded="${isExpanded}">
+          <span class="claude-projects-toggle-text">${isExpanded ? 'View less' : 'View more'}</span>
+          <svg class="claude-projects-toggle-chevron" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 -960 960 960" fill="currentColor">
+            <path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"/>
+          </svg>
+        </button>
+      `;
+
+      toggleWrap.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const currentlyExpanded = localStorage.getItem(PROJECTS_EXPANDED_KEY) === 'true';
+        const nextState = !currentlyExpanded;
+        try {
+          localStorage.setItem(PROJECTS_EXPANDED_KEY, nextState ? 'true' : 'false');
+        } catch (err) {}
+        updateProjectsCollapse();
+      }, true);
+    }
+
+    const btn = toggleWrap.querySelector('.claude-projects-toggle-btn');
+    const textSpan = toggleWrap.querySelector('.claude-projects-toggle-text');
+    if (btn) btn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+    if (textSpan) textSpan.textContent = isExpanded ? 'View less' : 'View more';
+    if (isExpanded) {
+      toggleWrap.classList.add('is-expanded');
+    } else {
+      toggleWrap.classList.remove('is-expanded');
+    }
+
+    if (lastRow && lastRow.parentElement) {
+      if (toggleWrap.parentElement !== lastRow.parentElement || lastRow.nextSibling !== toggleWrap) {
+        lastRow.parentElement.insertBefore(toggleWrap, lastRow.nextSibling);
+      }
+    }
+  }
+
   // 5. 净化顶部杂项按钮（如“安装 IDE”等非必要推广）
   function hidePromoButtons() {
     const btns = document.querySelectorAll('button');
@@ -532,18 +611,38 @@
 
   function extractFileInfo(el) {
     if (!el || !el.closest) return null;
-    const target = el.closest(
-      'button.inline-pill, [data-uri], a[href], [data-testid*="file"], [title*="/"], [title*="\\\\"]'
-    );
-    if (!target) return null;
 
-    let rawUri = target.getAttribute('data-uri') || target.getAttribute('href') || target.getAttribute('title');
+    // 1. 优先检查自身或祖先是否拥有 data-file-uri (Antigravity 2.22 原生变更栏与卡片)
+    const fileUriHolder = el.closest('[data-file-uri]');
+    let rawUri = fileUriHolder?.getAttribute('data-file-uri');
+
+    // 2. 查找包含文件路径属性的目标元素
     if (!rawUri) {
-      const text = target.textContent?.trim();
+      const target = el.closest(
+        '[data-file-uri], [data-uri], a[href], button.inline-pill, [data-testid*="file"], [title*="/"], [title*="\\\\"], code, span'
+      );
+      if (target) {
+        rawUri = target.getAttribute('data-file-uri') ||
+                 target.getAttribute('data-uri') ||
+                 target.getAttribute('href') ||
+                 target.getAttribute('title');
+        if (!rawUri) {
+          const text = target.textContent?.trim();
+          if (text && isLikelyFilePath(text) && !text.includes('\n')) {
+            rawUri = text;
+          }
+        }
+      }
+    }
+
+    // 3. 直接针对 el 自身文本检查
+    if (!rawUri) {
+      const text = el.textContent?.trim();
       if (text && isLikelyFilePath(text) && !text.includes('\n')) {
         rawUri = text;
       }
     }
+
     if (!rawUri || !isLikelyFilePath(rawUri)) return null;
     rawUri = rawUri.trim();
 
@@ -582,10 +681,10 @@
     const fileName = displayPath.split(/[/\\]/).filter(Boolean).pop() || displayPath;
 
     return {
-      element: target,
+      element: fileUriHolder || el,
       rawUri,
       cleanUri,
-      cleanPath,
+      cleanPath: decodeURIComponent(cleanPath),
       displayPath,
       fileName
     };
@@ -791,11 +890,13 @@
   // 暴露给注入进程热更新调用
   window.__claude_render_recents = renderRecents;
   window.__claude_process_docks = processThoughtAndToolDocks;
+  window.__claude_update_projects = updateProjectsCollapse;
 
   function tick() {
     hookNewChat();
     renameHeaders();
     renderRecents();
+    updateProjectsCollapse();
     hidePromoButtons();
     processThoughtAndToolDocks();
     setupDockObserver();
