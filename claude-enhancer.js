@@ -201,11 +201,14 @@
     const rows = cards.map(c => c.closest('.bg-sidebar.pt-1') || c.closest('.group\\/header')?.parentElement).filter(Boolean);
     if (!rows.length) return;
 
+    const virtualList = rows[0]?.parentElement;
     const total = rows.length;
+
     if (total <= 5) {
       rows.forEach(r => {
         if (r.style.display === 'none') r.style.display = '';
       });
+      if (virtualList) virtualList.style.removeProperty('height');
       const existingWrap = document.getElementById('claude-projects-toggle-wrap');
       if (existingWrap) existingWrap.remove();
       return;
@@ -222,7 +225,20 @@
       }
     });
 
-    const lastRow = rows[rows.length - 1];
+    // 计算 virtualList 实际需要的高度，确保折叠时下方无多余留白，展开时完整展示
+    if (virtualList) {
+      const targetRow = isExpanded ? rows[rows.length - 1] : rows[4];
+      if (targetRow) {
+        const match = targetRow.style.transform && targetRow.style.transform.match(/translateY\((\d+(?:\.\d+)?)px\)/);
+        const topY = match ? parseFloat(match[1]) : targetRow.offsetTop;
+        const h = targetRow.offsetHeight || 28;
+        const targetHeight = topY + h;
+        if (targetHeight > 0) {
+          virtualList.style.setProperty('height', targetHeight + 'px', 'important');
+        }
+      }
+    }
+
     let toggleWrap = document.getElementById('claude-projects-toggle-wrap');
     if (!toggleWrap) {
       toggleWrap = document.createElement('div');
@@ -259,9 +275,17 @@
       toggleWrap.classList.remove('is-expanded');
     }
 
-    if (lastRow && lastRow.parentElement) {
-      if (toggleWrap.parentElement !== lastRow.parentElement || lastRow.nextSibling !== toggleWrap) {
-        lastRow.parentElement.insertBefore(toggleWrap, lastRow.nextSibling);
+    // 关键修复：virtualList 容器内的项目均由绝对定位与 translateY 布局。
+    // toggleWrap 必须置于 virtualList 容器外部（位于项目虚拟列表与“最近”对话区域之间），
+    // 才能处于正常文档流中紧随第5个（或最后一个）项目下方，不会被错置在“置顶”与“项目”之间。
+    const recentSec = document.getElementById('claude-recent-section');
+    if (recentSec && recentSec.parentElement) {
+      if (recentSec.previousElementSibling !== toggleWrap) {
+        recentSec.parentElement.insertBefore(toggleWrap, recentSec);
+      }
+    } else if (virtualList && virtualList.parentElement) {
+      if (virtualList.nextSibling !== toggleWrap) {
+        virtualList.parentElement.insertBefore(toggleWrap, virtualList.nextSibling);
       }
     }
   }
